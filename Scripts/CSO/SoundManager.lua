@@ -43,13 +43,12 @@ local DUPLICATES = {
 }
 
 -- CSO's SwingN files sorted by ear, the same way as the hits below. Not used yet: every swing draws from all of them.
--- Swing7 isn't sorted yet.
 local SWING_CATEGORIES = {
     plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, maybe staves
     sharpMetal = { { 1, 6 } },         -- short blades, daggers
     metal = { { 11, 16 } },            -- generic: swords, staves
     ringingBlade = { { 24, 26 } },     -- one-handed long blades: like metal, but sharper and with a ring
-    heavyMetal = { { 8, 10 } },        -- maces, axes, probably two-handed swords
+    heavyMetal = { { 7, 10 } },        -- maces, axes, probably two-handed swords
     heavyMetalGeneric = { { 17, 20 } }, -- staves, polearms, spears, maybe two-handed maces, axes and swords
 }
 
