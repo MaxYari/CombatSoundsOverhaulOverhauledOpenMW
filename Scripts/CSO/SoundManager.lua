@@ -11,15 +11,15 @@
 --   * SwishS / SwishM / SwishL come from "Sound: Swish*" text keys in creature attack animations. The engine plays
 --     the sound as the key passes and hands the key to Lua in the same frame.
 --   * Light / Medium / Heavy Armor Hit are played by the builtin Combat onHit handler, which runs after ours. A
---     successful hit flags a check that onUpdate makes later in the same Lua update, after all the hit events.
+--     successful hit is kept for a check that onUpdate makes later in the same Lua update, after all the hit events.
+--   * Health Damage (Sound/Fx/body hit.wav) plays from the same handler on every hit that takes health, armored or
+--     not. It is never replaced: this mod ships its own copy of the file. When that check finds it with no armor
+--     sound, the hit landed on an unarmored spot (or on a creature), and one of CSO's fleshy impacts is layered on top.
 -- onUpdate does nothing unless one of those is pending.
 --
 -- Swings keep the original's condition: the actor holds something in its right hand. The original checked that on
 -- whoever the sound played on, which for armor hits is the one being hit, so an unarmed actor in armor kept the
--- vanilla armor sounds. Armor hits are swapped regardless now.
---
--- "Health Damage" (Sound/Fx/body hit.wav) plays on every hit that takes health, armored or not, and CSO's armor
--- hits layer on top of it. Neither the original nor this touches it; the mod ships its own copy of the file instead.
+-- vanilla armor sounds. Hits are swapped regardless now.
 local core = require('openmw.core')
 local self = require('openmw.self')
 local types = require('openmw.types')
@@ -36,9 +36,10 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
+local FLESH_HITS = 17 -- CSO's Hit1 to Hit17 are its fleshy impacts
 
--- Vanilla sound record -> the CSO set that replaces it. Keys are lowercase, as sound ids are case insensitive and
--- text keys reach Lua lowercased.
+-- Vanilla sound record -> the CSO set played for it. Keys are lowercase, as sound ids are case insensitive and
+-- text keys reach Lua lowercased. Flesh is layered over the vanilla sound; the others replace it.
 local TAGS = {
     ['weapon swish'] = 'swing',
     swishs = 'swing',
@@ -47,10 +48,14 @@ local TAGS = {
     ['light armor hit'] = 'hit',
     ['medium armor hit'] = 'hit',
     ['heavy armor hit'] = 'hit',
+    ['health damage'] = 'flesh',
 }
-local TAG_NAMES = { 'Weapon Swish', 'SwishS', 'SwishM', 'SwishL', 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit' }
+local TAG_NAMES = {
+    'Weapon Swish', 'SwishS', 'SwishM', 'SwishL', 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit', 'Health Damage',
+}
 local ARMOR_HIT_TAGS = { 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit' }
 local WEAPON_SWISH = 'Weapon Swish'
+local HEALTH_DAMAGE = 'Health Damage'
 
 local sound = core.sound
 local getEquipment = types.Actor.getEquipment
@@ -58,8 +63,8 @@ local RIGHT_HAND = types.Actor.EQUIPMENT_SLOT.CarriedRight
 local isPlayer = types.Player.objectIsInstance(self.object)
 
 local debugLog = false
-local windupUntil = nil  -- simulation time the current wind-up stops being watched
-local hitPending = false -- a successful hit landed; look for its armor sound in onUpdate
+local windupUntil = nil -- simulation time the current wind-up stops being watched
+local pendingHit = nil  -- the last successful hit, whose sounds onUpdate looks for
 
 -- Listed on first use rather than at load: most actors never swing or get hit.
 local files = nil
@@ -77,6 +82,11 @@ local function getFiles(kind)
                 print('[Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
             end
         end
+        files.flesh = {}
+        for _, path in ipairs(files.hit) do
+            local n = tonumber(path:match('/hit(%d+)%.%w+$'))
+            if n and n <= FLESH_HITS then files.flesh[#files.flesh + 1] = path end
+        end
     end
     return files[kind]
 end
@@ -92,8 +102,8 @@ local function pickFile(tag)
     return list[math.random(#list)]
 end
 
--- The one swap every path goes through: stop the vanilla sound on this actor and play a random CSO one instead.
--- Returns the file played, or nil.
+-- The one swap every path goes through: stop the vanilla sound on this actor and play a random CSO one instead,
+-- or for Health Damage, play one alongside it. Returns the file played, or nil.
 local function swap(tag, options, via)
     local kind = TAGS[tag:lower()]
     if not kind then return nil end
@@ -102,7 +112,7 @@ local function swap(tag, options, via)
     local file = pickFile(tag)
     if not file then return nil end
 
-    sound.stopSound3d(tag, self)
+    if kind ~= 'flesh' then sound.stopSound3d(tag, self) end
     if options.volume or options.pitch then
         sound.playSoundFile3d(file, self, { volume = options.volume, pitch = options.pitch })
     else
@@ -137,13 +147,23 @@ I.AnimationController.addTextKeyHandler('sound', function(_, key)
 end)
 
 I.Combat.addOnHitHandler(function(attack)
-    if attack.successful then hitPending = true end
+    if attack.successful then pendingHit = attack end
 end)
 
 local function onUpdate()
-    if hitPending then
-        hitPending = false
-        for _, tag in ipairs(ARMOR_HIT_TAGS) do swapIfPlaying(tag, 'hit') end
+    if pendingHit then
+        local attack = pendingHit
+        pendingHit = nil
+        local onArmor = false
+        for _, tag in ipairs(ARMOR_HIT_TAGS) do
+            if swapIfPlaying(tag, 'hit') then onArmor = true end
+        end
+        -- The handlers after ours have taken armor off this same attack table by now. Health left over is what
+        -- plays Health Damage; checking the sound as well leaves out hits the builtin handler never got to.
+        local health = attack.damage and attack.damage.health or 0
+        if not onArmor and health > 0 and sound.isSoundPlaying(HEALTH_DAMAGE, self) then
+            swap(HEALTH_DAMAGE, nil, 'unarmored hit')
+        end
     end
     if windupUntil then
         if swapIfPlaying(WEAPON_SWISH, 'early release') or core.getSimulationTime() > windupUntil then
@@ -168,12 +188,13 @@ return {
         version = 1,
         modVersion = VERSION,
 
-        --- Vanilla sound record ids CSO replaces, e.g. 'Weapon Swish' or 'Heavy Armor Hit'.
+        --- Vanilla sound record ids CSO answers, e.g. 'Weapon Swish', 'Heavy Armor Hit' or 'Health Damage'.
         TAGS = TAG_NAMES,
 
         --- Runs CSO's swap for a vanilla tag on this actor, as if the engine had just played that sound here: stops
-        -- the vanilla sound if it's playing and plays a random CSO sound in its place. A swing tag needs something in
-        -- the actor's right hand, like an engine swing does, unless options.force is set.
+        -- the vanilla sound if it's playing and plays a random CSO sound in its place. 'Health Damage' is what an
+        -- unarmored hit does: a fleshy CSO impact on top, with the vanilla sound left alone. A swing tag needs
+        -- something in the actor's right hand, like an engine swing does, unless options.force is set.
         -- @param #string tag One of TAGS, any case
         -- @param #table options (optional) force, volume, pitch
         -- @return #string VFS path of the sound played, or nil if nothing played
@@ -182,7 +203,8 @@ return {
         --- A random CSO file for a vanilla tag, without playing it. nil for tags CSO doesn't replace.
         pickFile = function(tag) return pickFile(tostring(tag)) end,
 
-        --- Prints every swap this actor makes, and what caught it (release, early release, text key, hit, emit, event).
+        --- Prints every swap this actor makes, and what caught it (release, early release, text key, hit, unarmored hit,
+        -- emit, event).
         setDebug = function(enabled) debugLog = enabled and true or false end,
     },
     engineHandlers = {

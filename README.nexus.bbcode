@@ -25,13 +25,17 @@ If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installin
 
 [size=5][b]The body hit sound[/b][/size]
 
-Every hit that takes health also plays the vanilla body hit, "Health Damage" ([font=Courier New]Sound\Fx\body hit.wav[/font]), whether it lands on armor or not. CSO has never replaced it. On armor, CSO's hit plays on top of it; on an unarmored spot, it plays alone.
+Every hit that takes health also plays the body hit, "Health Damage" ([font=Courier New]Sound\Fx\body hit.wav[/font]), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
 
-This mod ships its own [font=Courier New]Sound\Fx\body hit.wav[/font], which replaces the vanilla one.
+[list]
+[*]On armor, one of CSO's hits plays on top of it.
+[*]On an unarmored spot or a creature, one of CSO's fleshy impacts ([font=Courier New]Hit1[/font] to [font=Courier New]Hit17[/font]) plays on top of it. The original CSO left these hits with the vanilla sound alone.
+[/list]
 
 [size=5][b]Differences from the original[/b][/size]
 
 [list]
+[*]Hits that don't land on armor get a fleshy CSO impact on top of the body hit.
 [*]Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
 [*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders, so any sound file added there joins the rotation.
 [*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
@@ -46,13 +50,16 @@ Every NPC, creature and the player has [font=Courier New]I.CombatSoundsOverhaul[
 I.CombatSoundsOverhaul.emit('Heavy Armor Hit')
 I.CombatSoundsOverhaul.emit('Weapon Swish', { volume = 0.8, pitch = 1.1 })
 
+-- What an unarmored hit does: a fleshy CSO impact on top, the vanilla sound left alone
+I.CombatSoundsOverhaul.emit('Health Damage')
+
 -- Swing ids need something in the actor's right hand, the same as an engine swing.
 -- force skips that check, e.g. for an unarmed attack you want a CSO swing for:
 I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 
 [list]
 [*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold [font=Courier New]force[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font].
-[*][font=Courier New]TAGS[/font] lists the ids CSO replaces: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font] and [font=Courier New]Heavy Armor Hit[/font], in any case.
+[*][font=Courier New]TAGS[/font] lists the ids CSO answers: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font], [font=Courier New]Heavy Armor Hit[/font] and [font=Courier New]Health Damage[/font], in any case.
 [*][font=Courier New]pickFile(tag)[/font] returns a random CSO file for an id without playing it.
 [*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes, along with what caught it.
 [*]Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: [font=Courier New]actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })[/font].

@@ -21,12 +21,14 @@ If this is your first OpenMW mod, [read this first](https://modding-openmw.com/t
 
 ## The body hit sound
 
-Every hit that takes health also plays the vanilla body hit, "Health Damage" (`Sound\Fx\body hit.wav`), whether it lands on armor or not. CSO has never replaced it. On armor, CSO's hit plays on top of it; on an unarmored spot, it plays alone.
+Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\body hit.wav`), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
 
-This mod ships its own `Sound\Fx\body hit.wav`, which replaces the vanilla one.
+- On armor, one of CSO's hits plays on top of it.
+- On an unarmored spot or a creature, one of CSO's fleshy impacts (`Hit1` to `Hit17`) plays on top of it. The original CSO left these hits with the vanilla sound alone.
 
 ## Differences from the original
 
+- Hits that don't land on armor get a fleshy CSO impact on top of the body hit.
 - Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
 - The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders, so any sound file added there joins the rotation.
 - Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
@@ -41,13 +43,16 @@ local I = require('openmw.interfaces')
 I.CombatSoundsOverhaul.emit('Heavy Armor Hit')
 I.CombatSoundsOverhaul.emit('Weapon Swish', { volume = 0.8, pitch = 1.1 })
 
+-- What an unarmored hit does: a fleshy CSO impact on top, the vanilla sound left alone
+I.CombatSoundsOverhaul.emit('Health Damage')
+
 -- Swing ids need something in the actor's right hand, the same as an engine swing.
 -- force skips that check, e.g. for an unarmed attack you want a CSO swing for:
 I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
 ```
 
 - `emit(tag, options)` returns the path of the sound it played, or `nil` if it played nothing. `options` is optional and can hold `force`, `volume` and `pitch`.
-- `TAGS` lists the ids CSO replaces: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit` and `Heavy Armor Hit`, in any case.
+- `TAGS` lists the ids CSO answers: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit`, `Heavy Armor Hit` and `Health Damage`, in any case.
 - `pickFile(tag)` returns a random CSO file for an id without playing it.
 - `setDebug(true)` prints every swap the actor makes, along with what caught it.
 - Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: `actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })`.
@@ -57,7 +62,7 @@ To try it in game, open the console and type `luap` to work on the player, or cl
 <!-- nexus-skip-section -->
 ## Working on the mod
 
-The script can be exercised without starting the game. `tools/tests/` stubs the OpenMW Lua API and drives the script through swings, early releases, creature swish keys, armor and unarmored hits, and the interface:
+The script can be exercised without starting the game. `tools/tests/` stubs the OpenMW Lua API and drives the script through swings, early releases, creature swish keys, armored and unarmored hits, and the interface:
 
 ```sh
 luajit tools/tests/test.lua
