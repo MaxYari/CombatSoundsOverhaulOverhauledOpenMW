@@ -36,7 +36,7 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
--- CSO's HitN files sorted by ear, as ranges of N. Hit68 and Hit71 onwards aren't sorted yet.
+-- CSO's HitN files sorted by ear, as ranges of N. Hit68 and Hit72 onwards aren't sorted yet.
 local HIT_CATEGORIES = {
     flesh = { { 1, 10 } },
     punchyFlesh = { { 25, 29 } },
@@ -45,7 +45,7 @@ local HIT_CATEGORIES = {
     blade = { { 11, 17 } },                        -- simple blade hits
     armor = { { 18, 21 }, { 30, 32 }, { 57, 60 } },
     armorHeavy = { { 22, 24 }, { 33, 40 } },       -- maybe for maces later
-    armorFlesh = { { 41, 56 } },                   -- armor hit with a bloody layer
+    armorFlesh = { { 41, 56 }, { 71, 71 } },       -- armor hit with a bloody layer
     armorStab = { { 69, 69 } },                    -- fleshy stab with a metal ring
 }
 -- The categories layered over Health Damage on unarmored hits. The rest wait for a use: armor hits still draw from
