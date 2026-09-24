@@ -30,7 +30,7 @@ Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\
 
 - Hits that don't land on armor get a fleshy CSO impact on top of the body hit.
 - Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
-- The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders, so any sound file added there joins the rotation.
+- The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders, so any sound file added there joins the rotation. `Swing6` is left out, because it's a near copy of `Swing5`.
 - Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
 
 ## For developers

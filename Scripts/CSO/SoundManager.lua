@@ -36,17 +36,30 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
--- CSO's HitN files sorted by ear, as ranges of N. Hit68 and Hit72 onwards aren't sorted yet.
+
+-- Near copies of another CSO file, left out so that sound doesn't come up twice as often.
+local DUPLICATES = {
+    ['sound/fx/item/csoswing/swing6.wav'] = true, -- Swing5 trimmed a little shorter
+}
+
+-- CSO's HitN files sorted by ear. Each entry is a HitN number, or a { first, last } range of them. Hit68, Hit97 and
+-- Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
+    -- flesh
     flesh = { { 1, 10 } },
     punchyFlesh = { { 25, 29 } },
-    fleshySlice = { { 61, 64 } },                  -- for daggers and knives, maybe swords
-    fleshyStab = { { 65, 67 }, { 70, 70 } },
-    blade = { { 11, 17 } },                        -- simple blade hits
+    crunchyFlesh = { 72, 79 },                             -- punchy and crunchy, maybe maces on unarmored
+    fleshySlice = { { 61, 64 } },                          -- daggers and knives, maybe swords
+    fleshyStab = { { 65, 67 }, 70, { 73, 76 } },
+    stab = { 77, 78 },                                     -- simple stabs
+    blade = { { 11, 17 } },                                -- simple blade hits
+    -- armor
     armor = { { 18, 21 }, { 30, 32 }, { 57, 60 } },
-    armorHeavy = { { 22, 24 }, { 33, 40 } },       -- maybe for maces later
-    armorFlesh = { { 41, 56 }, { 71, 71 } },       -- armor hit with a bloody layer
-    armorStab = { { 69, 69 } },                    -- fleshy stab with a metal ring
+    armorHeavy = { { 22, 24 }, { 33, 40 }, { 82, 95 }, { 99, 102 } }, -- maybe maces later; 82+ are HeavyWoodClubInto
+    armorHeavyBlade = { 96 },                              -- with a ring
+    armorFlesh = { { 41, 56 }, 71 },                       -- with a bloody layer
+    armorCrunchyFlesh = { 80, 81 },
+    armorStab = { 69 },                                    -- fleshy stab with a metal ring
 }
 -- The categories layered over Health Damage on unarmored hits. The rest wait for a use: armor hits still draw from
 -- every Hit file.
@@ -83,8 +96,12 @@ local pendingHit = nil  -- the last successful hit, whose sounds onUpdate looks 
 local function inCategories(n, categories)
     if not n then return false end
     for _, category in ipairs(categories) do
-        for _, range in ipairs(HIT_CATEGORIES[category]) do
-            if n >= range[1] and n <= range[2] then return true end
+        for _, entry in ipairs(HIT_CATEGORIES[category]) do
+            if type(entry) == 'number' then
+                if n == entry then return true end
+            elseif n >= entry[1] and n <= entry[2] then
+                return true
+            end
         end
     end
     return false
@@ -98,7 +115,7 @@ local function getFiles(kind)
         for k, dir in pairs(SOUND_DIRS) do
             local list = {}
             for path in vfs.pathsWithPrefix(dir) do
-                if SOUND_EXTENSIONS[path:match('%.(%w+)$')] then list[#list + 1] = path end
+                if SOUND_EXTENSIONS[path:match('%.(%w+)$')] and not DUPLICATES[path] then list[#list + 1] = path end
             end
             table.sort(list)
             files[k] = list

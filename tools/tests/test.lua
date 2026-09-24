@@ -205,7 +205,8 @@ for _ = 1, 3000 do
 end
 local function count(t) local n = 0; for _ in pairs(t) do n = n + 1 end; return n end
 local function all(t, pred) for k in pairs(t) do if not pred(k) then return false end end; return true end
-check(count(swings) == 26, 'all 26 swings come up (' .. count(swings) .. ')')
+check(count(swings) == 25 and not swings['sound/fx/item/csoswing/swing6.wav'],
+    'all 25 swings come up, without Swing6, a near copy of Swing5 (' .. count(swings) .. ')')
 check(count(hits) == 102, 'all 102 hits come up (' .. count(hits) .. ')')
 check(count(flesh) == 15 and all(flesh, isUnarmored), 'unarmored hits get Hit1 to Hit10 and Hit25 to Hit29 (' .. count(flesh) .. ')')
 
