@@ -31,9 +31,19 @@ else
 end
 
 local realRequire = require
-_G.require = function(name) return stub.packages[name] or realRequire(name) end
-local script = assert(loadfile(SCRIPT))()
-_G.require = realRequire
+-- Loads the script with the unarmored layer switched on or off, whatever it ships with.
+local function loadScript(layer)
+    local f = assert(io.open(SCRIPT))
+    local src, n = f:read('a'):gsub('local LAYER_UNARMORED_HITS = %a+', 'local LAYER_UNARMORED_HITS = ' .. tostring(layer))
+    f:close()
+    assert(n == 1, 'LAYER_UNARMORED_HITS not found in ' .. SCRIPT)
+    stub.playBlendedHandlers, stub.textKeyHandlers, stub.hitHandlers = {}, {}, {}
+    _G.require = function(name) return stub.packages[name] or realRequire(name) end
+    local loaded = assert((loadstring or load)(src, '@' .. SCRIPT))()
+    _G.require = realRequire
+    return loaded
+end
+local script = loadScript(true)
 
 local api = script.interface
 local onUpdate = script.engineHandlers.onUpdate
@@ -209,6 +219,21 @@ check(count(swings) == 25 and not swings['sound/fx/item/csoswing/swing6.wav'],
     'all 25 swings come up, without Swing6, a near copy of Swing5 (' .. count(swings) .. ')')
 check(count(hits) == 102, 'all 102 hits come up (' .. count(hits) .. ')')
 check(count(flesh) == 15 and all(flesh, isUnarmored), 'unarmored hits get Hit1 to Hit10 and Hit25 to Hit29 (' .. count(flesh) .. ')')
+
+print('\n== unarmored layer switched off ==')
+local muted = loadScript(false)
+stub.reset()
+stub.rightHand = SWORD
+for i = #stub.hitHandlers, 1, -1 do stub.hitHandlers[i]({ successful = true, damage = { health = 10 } }) end
+stub.enginePlays('Health Damage')
+muted.engineHandlers.onUpdate(0.016)
+check(#stub.filesPlayed == 0 and stub.playing['health damage'] == true, 'an unarmored hit keeps only the body hit')
+stub.reset()
+stub.hit({ successful = true, damage = { health = 10 } })
+stub.enginePlays('Heavy Armor Hit')
+muted.engineHandlers.onUpdate(0.016)
+check(#stub.filesPlayed == 1 and isHit(lastFile()), 'armor hits are still swapped')
+check(isUnarmored(muted.interface.emit('Health Damage')), 'emit Health Damage still plays the layer')
 
 print(string.format('\n%d checks, %d failures', checks, failures))
 os.exit(failures == 0 and 0 or 1)

@@ -64,6 +64,9 @@ local HIT_CATEGORIES = {
 -- The categories layered over Health Damage on unarmored hits. The rest wait for a use: armor hits still draw from
 -- every Hit file.
 local UNARMORED_HITS = { 'flesh', 'punchyFlesh' }
+-- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the fleshy layer starts with it
+-- and drowns it out. emit('Health Damage') plays the layer either way.
+local LAYER_UNARMORED_HITS = true
 
 -- Vanilla sound record -> the CSO set played for it. Keys are lowercase, as sound ids are case insensitive and
 -- text keys reach Lua lowercased. The unarmored set is layered over the vanilla sound; the others replace it.
@@ -203,7 +206,7 @@ local function onUpdate()
         -- The handlers after ours have taken armor off this same attack table by now. Health left over is what
         -- plays Health Damage; checking the sound as well leaves out hits the builtin handler never got to.
         local health = attack.damage and attack.damage.health or 0
-        if not onArmor and health > 0 and sound.isSoundPlaying(HEALTH_DAMAGE, self) then
+        if LAYER_UNARMORED_HITS and not onArmor and health > 0 and sound.isSoundPlaying(HEALTH_DAMAGE, self) then
             swap(HEALTH_DAMAGE, nil, 'unarmored hit')
         end
     end
