@@ -42,6 +42,17 @@ local DUPLICATES = {
     ['sound/fx/item/csoswing/swing6.wav'] = true, -- Swing5 trimmed a little shorter
 }
 
+-- CSO's SwingN files sorted by ear, the same way as the hits below. Not used yet: every swing draws from all of them.
+-- Swing7 isn't sorted yet.
+local SWING_CATEGORIES = {
+    plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, maybe staves
+    sharpMetal = { { 1, 6 } },         -- short blades, daggers
+    metal = { { 11, 16 } },            -- generic: swords, staves
+    ringingBlade = { { 24, 26 } },     -- one-handed long blades: like metal, but sharper and with a ring
+    heavyMetal = { { 8, 10 } },        -- maces, axes, probably two-handed swords
+    heavyMetalGeneric = { { 17, 20 } }, -- staves, polearms, spears, maybe two-handed maces, axes and swords
+}
+
 -- CSO's HitN files sorted by ear. Each entry is a HitN number, or a { first, last } range of them. Hit68, Hit97 and
 -- Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
