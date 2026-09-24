@@ -41,9 +41,10 @@ local onUpdate = script.engineHandlers.onUpdate
 local function lastFile() local p = stub.filesPlayed[#stub.filesPlayed]; return p and p.file end
 local function isSwing(f) return f ~= nil and f:find('^sound/fx/item/csoswing/') ~= nil end
 local function isHit(f) return f ~= nil and f:find('^sound/fx/item/csohit/') ~= nil end
-local function isFlesh(f)
+-- flesh and punchy flesh, the categories layered over unarmored hits
+local function isUnarmored(f)
     local n = isHit(f) and tonumber(f:match('/hit(%d+)%.wav$'))
-    return n ~= nil and n >= 1 and n <= 10
+    return n ~= nil and ((n >= 1 and n <= 10) or (n >= 25 and n <= 29))
 end
 local SWORD = { recordId = 'iron longsword' }
 
@@ -142,7 +143,7 @@ for _, armed in ipairs({ true, false }) do
     stub.enginePlays('Health Damage') -- the roll landed on an unarmored slot, or on a creature
     onUpdate(0.016)
     local label = armed and 'armed' or 'unarmed'
-    check(#stub.filesPlayed == 1 and isFlesh(lastFile()), 'a fleshy CSO hit is layered on (' .. label .. ' defender)')
+    check(#stub.filesPlayed == 1 and isUnarmored(lastFile()), 'a fleshy CSO hit is layered on (' .. label .. ' defender)')
     check(#stub.stopped == 0 and stub.playing['health damage'] == true, 'over the vanilla Health Damage (' .. label .. ')')
 end
 stub.reset()
@@ -151,7 +152,7 @@ stub.hit(attack)
 attack.damage.health = 4 -- the handlers after ours work on the same table
 stub.enginePlays('Health Damage')
 onUpdate(0.016)
-check(#stub.filesPlayed == 1 and isFlesh(lastFile()), 'the damage is read once every handler has had it')
+check(#stub.filesPlayed == 1 and isUnarmored(lastFile()), 'the damage is read once every handler has had it')
 stub.reset()
 stub.enginePlays('Health Damage') -- still going from an earlier hit
 stub.hit({ successful = true, damage = { fatigue = 10 } })
@@ -184,7 +185,7 @@ check(isSwing(api.emit('Weapon Swish', { force = true, pitch = 1.3 })), 'unless 
 check(stub.filesPlayed[#stub.filesPlayed].options.pitch == 1.3, 'volume and pitch are passed on')
 stub.reset()
 stub.enginePlays('Health Damage')
-check(isFlesh(api.emit('Health Damage')), 'emit Health Damage plays a fleshy CSO hit')
+check(isUnarmored(api.emit('Health Damage')), 'emit Health Damage plays a fleshy CSO hit')
 check(#stub.stopped == 0 and stub.playing['health damage'] == true, 'and leaves the vanilla one playing')
 check(api.emit('Hand To Hand Hit') == nil and api.emit('nonsense') == nil, 'tags CSO does not answer play nothing')
 check(not pcall(api.emit, nil), 'a missing tag is an error')
@@ -206,7 +207,7 @@ local function count(t) local n = 0; for _ in pairs(t) do n = n + 1 end; return 
 local function all(t, pred) for k in pairs(t) do if not pred(k) then return false end end; return true end
 check(count(swings) == 26, 'all 26 swings come up (' .. count(swings) .. ')')
 check(count(hits) == 102, 'all 102 hits come up (' .. count(hits) .. ')')
-check(count(flesh) == 10 and all(flesh, isFlesh), 'the fleshy ones are Hit1 to Hit10 (' .. count(flesh) .. ')')
+check(count(flesh) == 15 and all(flesh, isUnarmored), 'unarmored hits get Hit1 to Hit10 and Hit25 to Hit29 (' .. count(flesh) .. ')')
 
 print(string.format('\n%d checks, %d failures', checks, failures))
 os.exit(failures == 0 and 0 or 1)

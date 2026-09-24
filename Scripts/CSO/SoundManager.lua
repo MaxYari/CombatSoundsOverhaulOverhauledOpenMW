@@ -36,16 +36,22 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
--- CSO's HitN files sorted by ear, as ranges of N. Only flesh is played so far, on unarmored hits. The others are
--- kept for later: armor hits still draw from every Hit file. Hit22 onwards isn't sorted yet.
+-- CSO's HitN files sorted by ear, as ranges of N. Hit65 onwards isn't sorted yet.
 local HIT_CATEGORIES = {
-    flesh = { 1, 10 },
-    blade = { 11, 17 }, -- simple blade hits
-    armor = { 18, 21 },
+    flesh = { { 1, 10 } },
+    punchyFlesh = { { 25, 29 } },
+    fleshySlice = { { 61, 64 } },                  -- for daggers and knives, maybe swords
+    blade = { { 11, 17 } },                        -- simple blade hits
+    armor = { { 18, 21 }, { 30, 32 }, { 57, 60 } },
+    armorHeavy = { { 22, 24 }, { 33, 40 } },       -- maybe for maces later
+    armorFlesh = { { 41, 56 } },                   -- armor hit with a bloody layer
 }
+-- The categories layered over Health Damage on unarmored hits. The rest wait for a use: armor hits still draw from
+-- every Hit file.
+local UNARMORED_HITS = { 'flesh', 'punchyFlesh' }
 
 -- Vanilla sound record -> the CSO set played for it. Keys are lowercase, as sound ids are case insensitive and
--- text keys reach Lua lowercased. Flesh is layered over the vanilla sound; the others replace it.
+-- text keys reach Lua lowercased. The unarmored set is layered over the vanilla sound; the others replace it.
 local TAGS = {
     ['weapon swish'] = 'swing',
     swishs = 'swing',
@@ -54,7 +60,7 @@ local TAGS = {
     ['light armor hit'] = 'hit',
     ['medium armor hit'] = 'hit',
     ['heavy armor hit'] = 'hit',
-    ['health damage'] = 'flesh',
+    ['health damage'] = 'unarmored',
 }
 local TAG_NAMES = {
     'Weapon Swish', 'SwishS', 'SwishM', 'SwishL', 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit', 'Health Damage',
@@ -72,6 +78,16 @@ local debugLog = false
 local windupUntil = nil -- simulation time the current wind-up stops being watched
 local pendingHit = nil  -- the last successful hit, whose sounds onUpdate looks for
 
+local function inCategories(n, categories)
+    if not n then return false end
+    for _, category in ipairs(categories) do
+        for _, range in ipairs(HIT_CATEGORIES[category]) do
+            if n >= range[1] and n <= range[2] then return true end
+        end
+    end
+    return false
+end
+
 -- Listed on first use rather than at load: most actors never swing or get hit.
 local files = nil
 local function getFiles(kind)
@@ -88,13 +104,11 @@ local function getFiles(kind)
                 print('[Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
             end
         end
-        for category, range in pairs(HIT_CATEGORIES) do
-            local list = {}
-            for _, path in ipairs(files.hit) do
-                local n = tonumber(path:match('/hit(%d+)%.%w+$'))
-                if n and n >= range[1] and n <= range[2] then list[#list + 1] = path end
+        files.unarmored = {}
+        for _, path in ipairs(files.hit) do
+            if inCategories(tonumber(path:match('/hit(%d+)%.%w+$')), UNARMORED_HITS) then
+                files.unarmored[#files.unarmored + 1] = path
             end
-            files[category] = list
         end
     end
     return files[kind]
@@ -121,7 +135,7 @@ local function swap(tag, options, via)
     local file = pickFile(tag)
     if not file then return nil end
 
-    if kind ~= 'flesh' then sound.stopSound3d(tag, self) end
+    if kind ~= 'unarmored' then sound.stopSound3d(tag, self) end
     if options.volume or options.pitch then
         sound.playSoundFile3d(file, self, { volume = options.volume, pitch = options.pitch })
     else
