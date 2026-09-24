@@ -43,7 +43,7 @@ local function isSwing(f) return f ~= nil and f:find('^sound/fx/item/csoswing/')
 local function isHit(f) return f ~= nil and f:find('^sound/fx/item/csohit/') ~= nil end
 local function isFlesh(f)
     local n = isHit(f) and tonumber(f:match('/hit(%d+)%.wav$'))
-    return n ~= nil and n >= 1 and n <= 17
+    return n ~= nil and n >= 1 and n <= 10
 end
 local SWORD = { recordId = 'iron longsword' }
 
@@ -206,7 +206,7 @@ local function count(t) local n = 0; for _ in pairs(t) do n = n + 1 end; return 
 local function all(t, pred) for k in pairs(t) do if not pred(k) then return false end end; return true end
 check(count(swings) == 26, 'all 26 swings come up (' .. count(swings) .. ')')
 check(count(hits) == 102, 'all 102 hits come up (' .. count(hits) .. ')')
-check(count(flesh) == 17 and all(flesh, isFlesh), 'the fleshy ones are Hit1 to Hit17 (' .. count(flesh) .. ')')
+check(count(flesh) == 10 and all(flesh, isFlesh), 'the fleshy ones are Hit1 to Hit10 (' .. count(flesh) .. ')')
 
 print(string.format('\n%d checks, %d failures', checks, failures))
 os.exit(failures == 0 and 0 or 1)

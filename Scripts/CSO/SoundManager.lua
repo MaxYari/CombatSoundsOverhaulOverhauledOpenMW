@@ -36,7 +36,13 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
-local FLESH_HITS = 17 -- CSO's Hit1 to Hit17 are its fleshy impacts
+-- CSO's HitN files sorted by ear, as ranges of N. Only flesh is played so far, on unarmored hits. The others are
+-- kept for later: armor hits still draw from every Hit file. Hit22 onwards isn't sorted yet.
+local HIT_CATEGORIES = {
+    flesh = { 1, 10 },
+    blade = { 11, 17 }, -- simple blade hits
+    armor = { 18, 21 },
+}
 
 -- Vanilla sound record -> the CSO set played for it. Keys are lowercase, as sound ids are case insensitive and
 -- text keys reach Lua lowercased. Flesh is layered over the vanilla sound; the others replace it.
@@ -82,10 +88,13 @@ local function getFiles(kind)
                 print('[Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
             end
         end
-        files.flesh = {}
-        for _, path in ipairs(files.hit) do
-            local n = tonumber(path:match('/hit(%d+)%.%w+$'))
-            if n and n <= FLESH_HITS then files.flesh[#files.flesh + 1] = path end
+        for category, range in pairs(HIT_CATEGORIES) do
+            local list = {}
+            for _, path in ipairs(files.hit) do
+                local n = tonumber(path:match('/hit(%d+)%.%w+$'))
+                if n and n >= range[1] and n <= range[2] then list[#list + 1] = path end
+            end
+            files[category] = list
         end
     end
     return files[kind]

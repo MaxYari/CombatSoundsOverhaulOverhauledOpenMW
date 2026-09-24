@@ -24,7 +24,7 @@ If this is your first OpenMW mod, [read this first](https://modding-openmw.com/t
 Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\body hit.wav`), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
 
 - On armor, one of CSO's hits plays on top of it.
-- On an unarmored spot or a creature, one of CSO's fleshy impacts (`Hit1` to `Hit17`) plays on top of it. The original CSO left these hits with the vanilla sound alone.
+- On an unarmored spot or a creature, one of CSO's fleshy impacts (`Hit1` to `Hit10`) plays on top of it. The original CSO left these hits with the vanilla sound alone.
 
 ## Differences from the original
 
