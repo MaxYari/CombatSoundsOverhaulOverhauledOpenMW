@@ -1,0 +1,65 @@
+[size=6][b]Combat Sounds Overhaul - Event Driven[/b][/size]
+
+A drop-in replacement for the script of [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] (CSO) by Jyggalagpuff. It uses the same sounds and does the same job: weapon swings and armor hits play CSO's randomized sounds instead of the vanilla ones.
+
+The difference is in how it notices them. The original checked every actor, every frame, for any of seven vanilla sounds. This version reacts to the attack animations and hit events that make the engine play those sounds, and does nothing in between.
+
+[size=5][b]How to install[/b][/size]
+
+[list]
+[*][b]Requires OpenMW 0.51 or newer.[/b]
+[*][b]Requires [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] 2.0[/b], installed and enabled as usual. This mod plays CSO's sounds from where CSO installs them, so CSO must stay installed.
+[*]Add this mod's folder to your data folders [b]below[/b] Combat Sounds Overhaul, so that its [font=Courier New]Scripts/CSO/SoundManager.lua[/font] replaces CSO's. There is nothing new to enable in Content Files, because CSO's own plugin loads the replaced script.
+[*]If you have the [url=https://www.nexusmods.com/morrowind/mods/58744]Combat Sounds Overhaul - Optimization Patch[/url], remove it. Both replace the same file, so only the one lower in the list takes effect.
+[/list]
+
+If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installing-mods/]read this first[/url].
+
+[size=5][b]What gets replaced[/b][/size]
+
+[list]
+[*][b]Weapon Swish[/b], the swing of any melee or thrown attack, when the attacker holds something in their right hand. It is swapped as the attack is released.
+[*][b]SwishS, SwishM, SwishL[/b], played by the [font=Courier New]Sound: Swish[/font] keys in creature attack animations, when the creature holds something in its right hand.
+[*][b]Light, Medium and Heavy Armor Hit[/b], whenever a hit lands on a piece of armor.
+[/list]
+
+[size=5][b]The body hit sound[/b][/size]
+
+Every hit that takes health also plays the vanilla body hit, "Health Damage" ([font=Courier New]Sound\Fx\body hit.wav[/font]), whether it lands on armor or not. CSO has never replaced it. On armor, CSO's hit plays on top of it; on an unarmored spot, it plays alone.
+
+This mod ships its own [font=Courier New]Sound\Fx\body hit.wav[/font], which replaces the vanilla one.
+
+[size=5][b]Differences from the original[/b][/size]
+
+[list]
+[*]Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
+[*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders, so any sound file added there joins the rotation.
+[*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
+[/list]
+
+[size=5][b]For developers[/b][/size]
+
+Every NPC, creature and the player has [font=Courier New]I.CombatSoundsOverhaul[/font]. Pass it a vanilla sound id and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a random CSO sound in its place.
+
+[code]local I = require('openmw.interfaces')
+
+I.CombatSoundsOverhaul.emit('Heavy Armor Hit')
+I.CombatSoundsOverhaul.emit('Weapon Swish', { volume = 0.8, pitch = 1.1 })
+
+-- Swing ids need something in the actor's right hand, the same as an engine swing.
+-- force skips that check, e.g. for an unarmed attack you want a CSO swing for:
+I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
+
+[list]
+[*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold [font=Courier New]force[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font].
+[*][font=Courier New]TAGS[/font] lists the ids CSO replaces: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font] and [font=Courier New]Heavy Armor Hit[/font], in any case.
+[*][font=Courier New]pickFile(tag)[/font] returns a random CSO file for an id without playing it.
+[*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes, along with what caught it.
+[*]Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: [font=Courier New]actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })[/font].
+[/list]
+
+To try it in game, open the console and type [font=Courier New]luap[/font] to work on the player, or click an NPC and type [font=Courier New]luas[/font] to work on that NPC. Then run [font=Courier New]I.CombatSoundsOverhaul.emit('Heavy Armor Hit')[/font].
+
+[size=5][b]Credits[/b][/size]
+
+[url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] and its sounds are by Jyggalagpuff, made from the assets of Impact Sounds. This mod only replaces its script, and needs it installed. The event-driven script is by Max Yari.
