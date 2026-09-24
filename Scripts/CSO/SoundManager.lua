@@ -36,11 +36,12 @@ local SOUND_DIRS = {
     hit = 'sound/fx/item/csohit/',
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
--- CSO's HitN files sorted by ear, as ranges of N. Hit65 onwards isn't sorted yet.
+-- CSO's HitN files sorted by ear, as ranges of N. Hit68 onwards isn't sorted yet.
 local HIT_CATEGORIES = {
     flesh = { { 1, 10 } },
     punchyFlesh = { { 25, 29 } },
     fleshySlice = { { 61, 64 } },                  -- for daggers and knives, maybe swords
+    fleshyStab = { { 65, 67 } },
     blade = { { 11, 17 } },                        -- simple blade hits
     armor = { { 18, 21 }, { 30, 32 }, { 57, 60 } },
     armorHeavy = { { 22, 24 }, { 33, 40 } },       -- maybe for maces later
