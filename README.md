@@ -54,7 +54,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
 - `emit(tag, options)` returns the path of the sound it played, or `nil` if it played nothing. `options` is optional and can hold `force`, `volume` and `pitch`.
 - `TAGS` lists the ids CSO answers: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit`, `Heavy Armor Hit` and `Health Damage`, in any case.
 - `pickFile(tag)` returns a random CSO file for an id without playing it.
-- `setDebug(true)` prints every swap the actor makes, along with what caught it.
+- `setDebug(true)` prints every swap the actor makes to `openmw.log`, along with what caught it, what the attack was made with (for example `axe 2h`, `staff 2h`, `handToHand`, or `natural` for a creature's own attack) and, for a hit, the weight of the armor on the spot it landed.
 - Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: `actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })`.
 
 To try it in game, open the console and type `luap` to work on the player, or click an NPC and type `luas` to work on that NPC. Then run `I.CombatSoundsOverhaul.emit('Heavy Armor Hit')`.

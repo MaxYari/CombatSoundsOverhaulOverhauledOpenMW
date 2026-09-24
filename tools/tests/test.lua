@@ -56,7 +56,7 @@ local function isUnarmored(f)
     local n = isHit(f) and tonumber(f:match('/hit(%d+)%.wav$'))
     return n ~= nil and ((n >= 1 and n <= 10) or (n >= 25 and n <= 29))
 end
-local SWORD = { recordId = 'iron longsword' }
+local SWORD = stub.weapon('iron longsword', 'LongBladeOneHand')
 
 print('\n== loading ==')
 check(script.interfaceName == 'CombatSoundsOverhaul', 'provides I.CombatSoundsOverhaul')
@@ -219,6 +219,73 @@ check(count(swings) == 25 and not swings['sound/fx/item/csoswing/swing6.wav'],
     'all 25 swings come up, without Swing6, a near copy of Swing5 (' .. count(swings) .. ')')
 check(count(hits) == 102, 'all 102 hits come up (' .. count(hits) .. ')')
 check(count(flesh) == 15 and all(flesh, isUnarmored), 'unarmored hits get Hit1 to Hit10 and Hit25 to Hit29 (' .. count(flesh) .. ')')
+
+print('\n== what the attack is made with, and the armor it lands on ==')
+-- The debug line is where both show for now: nothing picks sounds by them yet.
+local realPrint = print
+local function logged(fn)
+    local lines = {}
+    _G.print = function(line) lines[#lines + 1] = line end
+    local ok, err = pcall(fn)
+    _G.print = realPrint
+    assert(ok, err)
+    return table.concat(lines, '\n')
+end
+api.setDebug(true)
+local function swingWith(item)
+    stub.reset()
+    stub.rightHand = item
+    return logged(function()
+        stub.windUp('chop')
+        stub.enginePlays('Weapon Swish')
+        stub.release('chop')
+    end)
+end
+local function hitBy(attack, armorTag)
+    stub.reset()
+    return logged(function()
+        stub.hit(attack)
+        if armorTag then stub.enginePlays(armorTag) end
+        stub.enginePlays('Health Damage')
+        onUpdate(0.016)
+    end)
+end
+local swings = {
+    { 'ShortBladeOneHand', 'shortBlade 1h' }, { 'LongBladeOneHand', 'longBlade 1h' },
+    { 'LongBladeTwoHand', 'longBlade 2h' }, { 'BluntOneHand', 'blunt 1h' }, { 'BluntTwoClose', 'blunt 2h' },
+    { 'BluntTwoWide', 'staff 2h' }, { 'SpearTwoWide', 'spear 2h' }, { 'AxeOneHand', 'axe 1h' },
+    { 'AxeTwoHand', 'axe 2h' }, { 'MarksmanThrown', 'thrown 1h' },
+}
+for _, s in ipairs(swings) do
+    local line = swingWith(stub.weapon('w', s[1]))
+    check(line:find('(release, ' .. s[2] .. ')', 1, true) ~= nil, s[1] .. ' swings as ' .. s[2])
+end
+check(swingWith(stub.item('pick_apprentice_01')):find('(release, other)', 1, true) ~= nil,
+    'something in the right hand that is not a weapon is other')
+stub.rightHand = SWORD
+local line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.npc(),
+    weapon = stub.weapon('w', 'AxeTwoHand') }, 'Heavy Armor Hit')
+check(line:find('Heavy Armor Hit', 1, true) and line:find('(hit, axe 2h, heavy armor)', 1, true),
+    'a two-handed axe on heavy armor')
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.npc(),
+    weapon = stub.weapon('w', 'ShortBladeOneHand') }, 'Light Armor Hit')
+check(line:find('(hit, shortBlade 1h, light armor)', 1, true) ~= nil, 'a dagger on light armor')
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.npc(),
+    weapon = stub.weapon('w', 'BluntOneHand') }, 'Medium Armor Hit')
+check(line:find('(hit, blunt 1h, medium armor)', 1, true) ~= nil, 'a mace on medium armor')
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.npc() })
+check(line:find('(unarmored hit, handToHand, no armor)', 1, true) ~= nil, 'a punch on an unarmored spot')
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.creature() })
+check(line:find('(unarmored hit, natural, no armor)', 1, true) ~= nil, "a creature's own attack")
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = stub.npc(),
+    weapon = stub.weapon('w', 'MarksmanBow'), ammo = 'iron arrow' })
+check(line:find('(unarmored hit, bow 2h, no armor)', 1, true) ~= nil, 'an arrow counts as its bow')
+line = hitBy({ successful = true, damage = { health = 5 } })
+check(line:find('(unarmored hit, no armor)', 1, true) ~= nil, 'a hit with no attacker and no weapon has neither')
+stub.reset()
+line = logged(function() api.emit('Medium Armor Hit') end)
+check(line:find('(emit, medium armor)', 1, true) ~= nil, 'emit of an armor hit knows its armor')
+api.setDebug(false)
 
 print('\n== unarmored layer switched off ==')
 local muted = loadScript(false)

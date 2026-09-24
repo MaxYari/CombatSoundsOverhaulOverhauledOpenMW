@@ -51,6 +51,18 @@ end
 local selfObject = { recordId = 'test_actor' }
 M.isPlayer = false
 
+M.WEAPON_TYPE = {
+    ShortBladeOneHand = 0, LongBladeOneHand = 1, LongBladeTwoHand = 2, BluntOneHand = 3, BluntTwoClose = 4,
+    BluntTwoWide = 5, SpearTwoWide = 6, AxeOneHand = 7, AxeTwoHand = 8, MarksmanBow = 9, MarksmanCrossbow = 10,
+    MarksmanThrown = 11, Arrow = 12, Bolt = 13,
+}
+function M.weapon(recordId, typeName)
+    return { recordId = recordId, isWeapon = true, weaponType = assert(M.WEAPON_TYPE[typeName], typeName) }
+end
+function M.item(recordId) return { recordId = recordId } end
+function M.npc() return { recordId = 'test_npc' } end
+function M.creature() return { recordId = 'test_creature', isCreature = true } end
+
 M.packages = {
     ['openmw.core'] = {
         getSimulationTime = function() return M.simulationTime end,
@@ -80,6 +92,12 @@ M.packages = {
             end,
         },
         Player = { objectIsInstance = function() return M.isPlayer end },
+        Creature = { objectIsInstance = function(obj) return obj.isCreature == true end },
+        Weapon = {
+            TYPE = M.WEAPON_TYPE,
+            objectIsInstance = function(obj) return obj.isWeapon == true end,
+            record = function(obj) return { type = obj.weaponType } end,
+        },
     },
     ['openmw.vfs'] = {
         pathsWithPrefix = function(prefix)

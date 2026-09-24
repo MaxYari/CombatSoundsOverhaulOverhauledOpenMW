@@ -17,6 +17,11 @@
 --     sound, the hit landed on an unarmored spot (or on a creature), and one of CSO's fleshy impacts is layered on top.
 -- onUpdate does nothing unless one of those is pending.
 --
+-- Every swap knows what the attack is made with (weaponKind: the swinging actor's right hand, or the hit's weapon and
+-- attacker), and a hit knows the weight of the armor on the spot it landed: the builtin handler rolls the spot and
+-- plays the armor sound for that weight, or only Health Damage if there's no armor there. Nothing picks sounds by
+-- them yet; setDebug shows them.
+--
 -- Swings keep the original's condition: the actor holds something in its right hand. The original checked that on
 -- whoever the sound played on, which for armor hits is the one being hit, so an unarmed actor in armor kept the
 -- vanilla armor sounds. Hits are swapped regardless now.
@@ -97,6 +102,34 @@ local ARMOR_HIT_TAGS = { 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit
 local WEAPON_SWISH = 'Weapon Swish'
 local HEALTH_DAMAGE = 'Health Damage'
 
+-- The weight of the armor on the spot a hit landed, by the sound the builtin handler played for it
+local ARMOR_BY_TAG = {
+    ['light armor hit'] = 'light',
+    ['medium armor hit'] = 'medium',
+    ['heavy armor hit'] = 'heavy',
+    ['health damage'] = 'none',
+}
+
+-- Weapon.TYPE -> what CSO calls it: the family, and the hands it takes
+local Weapon = types.Weapon
+local WEAPON_KINDS = {
+    [Weapon.TYPE.ShortBladeOneHand] = { family = 'shortBlade', hands = 1 },
+    [Weapon.TYPE.LongBladeOneHand] = { family = 'longBlade', hands = 1 }, -- longswords, broadswords, katanas
+    [Weapon.TYPE.LongBladeTwoHand] = { family = 'longBlade', hands = 2 }, -- claymores, dai-katanas
+    [Weapon.TYPE.BluntOneHand] = { family = 'blunt', hands = 1 },         -- maces, clubs
+    [Weapon.TYPE.BluntTwoClose] = { family = 'blunt', hands = 2 },        -- warhammers
+    [Weapon.TYPE.BluntTwoWide] = { family = 'staff', hands = 2 },
+    [Weapon.TYPE.SpearTwoWide] = { family = 'spear', hands = 2 },         -- spears and polearms
+    [Weapon.TYPE.AxeOneHand] = { family = 'axe', hands = 1 },
+    [Weapon.TYPE.AxeTwoHand] = { family = 'axe', hands = 2 },
+    [Weapon.TYPE.MarksmanThrown] = { family = 'thrown', hands = 1 },
+    [Weapon.TYPE.MarksmanBow] = { family = 'bow', hands = 2 },
+    [Weapon.TYPE.MarksmanCrossbow] = { family = 'crossbow', hands = 2 },
+}
+local HAND_TO_HAND = { family = 'handToHand' }
+local NATURAL = { family = 'natural' } -- a creature's own claws, bites and blows
+local OTHER = { family = 'other' }     -- something that isn't a weapon, or a weapon type no attack is made with
+
 local sound = core.sound
 local getEquipment = types.Actor.getEquipment
 local RIGHT_HAND = types.Actor.EQUIPMENT_SLOT.CarriedRight
@@ -150,6 +183,22 @@ local function endsWith(s, suffix)
     return s:sub(-#suffix) == suffix
 end
 
+-- What an attack is made with: the weapon's kind, or bare hands, or a creature's own attack. nil without either.
+local function weaponKind(item, actor)
+    if item then
+        return Weapon.objectIsInstance(item) and WEAPON_KINDS[Weapon.record(item).type] or OTHER
+    end
+    if not actor then return nil end
+    return types.Creature.objectIsInstance(actor) and NATURAL or HAND_TO_HAND
+end
+
+local function describe(via, weapon, armor)
+    local parts = { via }
+    if weapon then parts[#parts + 1] = weapon.family .. (weapon.hands and (' ' .. weapon.hands .. 'h') or '') end
+    if armor then parts[#parts + 1] = armor == 'none' and 'no armor' or (armor .. ' armor') end
+    return table.concat(parts, ', ')
+end
+
 local function pickFile(tag)
     local kind = TAGS[tag:lower()]
     local list = kind and getFiles(kind)
@@ -158,14 +207,18 @@ local function pickFile(tag)
 end
 
 -- The one swap every path goes through: stop the vanilla sound on this actor and play a random CSO one instead,
--- or for Health Damage, play one alongside it. Returns the file played, or nil.
-local function swap(tag, options, via)
+-- or for Health Damage, play one alongside it. weapon is what the attack is made with (weaponKind); a swing's is
+-- taken from this actor's right hand when not given. The armor hit comes from the tag. Returns the file played, or nil.
+local function swap(tag, options, via, weapon)
     local kind = TAGS[tag:lower()]
     if not kind then return nil end
     options = options or {}
-    if kind == 'swing' and not options.force and not getEquipment(self, RIGHT_HAND) then return nil end
+    local rightHand = getEquipment(self, RIGHT_HAND)
+    if kind == 'swing' and not options.force and not rightHand then return nil end
     local file = pickFile(tag)
     if not file then return nil end
+    if kind == 'swing' and not weapon then weapon = weaponKind(rightHand, self) end
+    local armor = ARMOR_BY_TAG[tag:lower()]
 
     if kind ~= 'unarmored' then sound.stopSound3d(tag, self) end
     if options.volume or options.pitch then
@@ -174,13 +227,14 @@ local function swap(tag, options, via)
         sound.playSoundFile3d(file, self)
     end
     if debugLog then
-        print(string.format('[Combat Sounds Overhaul] %s: %s -> %s (%s)', self.recordId, tag, file, via))
+        print(string.format('[Combat Sounds Overhaul] %s: %s -> %s (%s)', self.recordId, tag, file,
+            describe(via, weapon, armor)))
     end
     return file
 end
 
-local function swapIfPlaying(tag, via)
-    if sound.isSoundPlaying(tag, self) then return swap(tag, nil, via) end
+local function swapIfPlaying(tag, via, weapon)
+    if sound.isSoundPlaying(tag, self) then return swap(tag, nil, via, weapon) end
     return nil
 end
 
@@ -209,15 +263,19 @@ local function onUpdate()
     if pendingHit then
         local attack = pendingHit
         pendingHit = nil
+        local weapon = weaponKind(attack.weapon, attack.attacker)
         local onArmor = false
         for _, tag in ipairs(ARMOR_HIT_TAGS) do
-            if swapIfPlaying(tag, 'hit') then onArmor = true end
+            if sound.isSoundPlaying(tag, self) then
+                onArmor = true
+                swap(tag, nil, 'hit', weapon)
+            end
         end
         -- The handlers after ours have taken armor off this same attack table by now. Health left over is what
         -- plays Health Damage; checking the sound as well leaves out hits the builtin handler never got to.
         local health = attack.damage and attack.damage.health or 0
         if LAYER_UNARMORED_HITS and not onArmor and health > 0 and sound.isSoundPlaying(HEALTH_DAMAGE, self) then
-            swap(HEALTH_DAMAGE, nil, 'unarmored hit')
+            swap(HEALTH_DAMAGE, nil, 'unarmored hit', weapon)
         end
     end
     if windupUntil then
@@ -258,8 +316,8 @@ return {
         --- A random CSO file for a vanilla tag, without playing it. nil for tags CSO doesn't replace.
         pickFile = function(tag) return pickFile(tostring(tag)) end,
 
-        --- Prints every swap this actor makes, and what caught it (release, early release, text key, hit, unarmored hit,
-        -- emit, event).
+        --- Prints every swap this actor makes: what caught it (release, early release, text key, hit, unarmored hit,
+        -- emit, event), what the attack was made with, and for hits the armor on the spot it landed.
         setDebug = function(enabled) debugLog = enabled and true or false end,
     },
     engineHandlers = {

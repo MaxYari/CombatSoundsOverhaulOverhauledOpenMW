@@ -61,7 +61,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 [*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold [font=Courier New]force[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font].
 [*][font=Courier New]TAGS[/font] lists the ids CSO answers: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font], [font=Courier New]Heavy Armor Hit[/font] and [font=Courier New]Health Damage[/font], in any case.
 [*][font=Courier New]pickFile(tag)[/font] returns a random CSO file for an id without playing it.
-[*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes, along with what caught it.
+[*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes to [font=Courier New]openmw.log[/font], along with what caught it, what the attack was made with (for example [font=Courier New]axe 2h[/font], [font=Courier New]staff 2h[/font], [font=Courier New]handToHand[/font], or [font=Courier New]natural[/font] for a creature's own attack) and, for a hit, the weight of the armor on the spot it landed.
 [*]Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: [font=Courier New]actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })[/font].
 [/list]
 
