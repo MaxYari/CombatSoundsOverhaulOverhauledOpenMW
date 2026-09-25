@@ -37,7 +37,7 @@ local I = require('openmw.interfaces')
 local VERSION = "1.0"
 
 local WINDUP_WATCH = 1.5 -- seconds of simulation time an attack's wind-up is watched for an early release
-local PITCH_MIN, PITCH_MAX = 0.85, 1.0 -- every CSO sound plays at a random pitch in between
+local PITCH_MIN, PITCH_MAX = 0.9, 1.1 -- every CSO sound plays at a random pitch in between
 
 local SOUND_DIRS = {
     swing = 'sound/fx/item/csoswing/',
@@ -87,7 +87,7 @@ local HIT_CATEGORIES = {
 local SWING_SOUNDS = {
     shortBlade = { 'sharpMetal' },
     longBlade1 = { 'ringingBlade', 'metal' },
-    longBlade2 = { 'heavyMetal', 'heavyMetalGeneric', 'metal' },
+    longBlade2 = { 'heavyMetalGeneric', 'metal' },
     blunt1 = { 'heavyMetal' },
     blunt2 = { 'heavyMetal', 'heavyMetalGeneric' },
     axe1 = { 'heavyMetal' },
@@ -588,14 +588,14 @@ return {
         -- blood), Metal, Bone or Ghost. Read from its blood type, and for ghosts its name and model.
         getBody = function() return NAME_OF_SURFACE[bodyType()] end,
 
-        --- Plays a CSO swing on this actor for a weapon, at a random pitch between 0.85 and 1.
+        --- Plays a CSO swing on this actor for a weapon, at a random pitch between 0.9 and 1.1.
         -- @param weapon One of WEAPON
         -- @param #number volume (optional) Volume multiplier, 1 by default
         -- @return #string VFS path of the sound played, or nil if nothing played (Natural, Bow and Crossbow have no
         -- swings, and a play handler can stop it)
         playSwing = playSwing,
 
-        --- Plays a CSO hit on this actor for what it lands on, at a random pitch between 0.85 and 1.
+        --- Plays a CSO hit on this actor for what it lands on, at a random pitch between 0.9 and 1.1.
         -- @param armor One of ARMOR
         -- @param #number volume (optional) Volume multiplier, 1 by default
         -- @param weapon (optional) One of WEAPON: what the hit is made with, which picks among the sounds for the armor
@@ -629,7 +629,7 @@ return {
         --   weapon, attacker: what the attack is made with, as for a hit (a weapon object, and who holds it)
         --   attackType: one of I.Combat.ATTACK_TYPES, for a hit. A thrust with a weapon picks the stabs.
         --   force: play even when no category answers the attack, drawing from all of CSO's swings or hits
-        --   volume, pitch: pitch is random between 0.85 and 1 otherwise
+        --   volume, pitch: pitch is random between 0.9 and 1.1 otherwise
         -- @return #string VFS path of the sound played, or nil if nothing played
         emit = emit,
 

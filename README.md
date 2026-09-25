@@ -19,7 +19,7 @@ If this is your first OpenMW mod, [read this first](https://modding-openmw.com/t
 - **SwishS, SwishM, SwishL**, played by the `Sound: Swish` keys in creature attack animations, when the creature holds a weapon.
 - **Light, Medium and Heavy Armor Hit**, whenever a hit lands on a piece of armor.
 
-Every CSO sound plays at a slightly random pitch, between 0.85 and 1.
+Every CSO sound plays at a slightly random pitch, between 0.9 and 1.1.
 
 ## How the sounds are picked
 
@@ -30,7 +30,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 - Short blades: sharp metallic whooshes.
 - One-handed long blades: ringing blade whooshes and generic metallic ones.
 - Maces and one-handed axes: heavy metallic whooshes.
-- Two-handed swords: heavy metallic whooshes, the more generic heavy ones, and generic metallic ones.
+- Two-handed swords: generic heavy metallic whooshes and generic metallic ones.
 - Warhammers and battle axes: heavy metallic whooshes, plus the more generic heavy ones.
 - Spears: generic heavy metallic whooshes.
 - Staves: plain, metallic and generic heavy whooshes.
@@ -100,7 +100,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
   - `weapon` and `attacker`: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
   - `attackType`: one of `I.Combat.ATTACK_TYPES`, for a hit. A thrust with a weapon picks the stabs.
   - `force`: play something even when CSO has no sound for the attack.
-  - `volume` and `pitch`. The pitch is random between 0.85 and 1 otherwise.
+  - `volume` and `pitch`. The pitch is random between 0.9 and 1.1 otherwise.
 - `TAGS` lists the ids CSO answers: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit`, `Heavy Armor Hit` and `Health Damage`, in any case.
 - `pickFile(tag, options)` returns the CSO file `emit` would pick, without playing it.
 
@@ -122,7 +122,7 @@ cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thru
 
 - Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Ghost` has no hits yet.
 - `getBody()` returns what the actor's body counts as when a hit lands on no armor: `Unarmored`, `Metal`, `Bone` or `Ghost`.
-- The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
+- The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
 - An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
 
 ### Hearing about a sound before it plays

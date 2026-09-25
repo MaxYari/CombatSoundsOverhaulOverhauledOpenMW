@@ -128,7 +128,7 @@ stub.release('chop')
 check(stub.stopped[1] == 'Weapon Swish', 'the vanilla swish is stopped in the release call')
 check(#stub.filesPlayed == 1 and inSet(SWORD_SWINGS, lastFile()), 'and a longsword swing plays')
 local pitch = stub.filesPlayed[1].options.pitch
-check(pitch >= 0.85 and pitch <= 1.0, string.format('at a pitch between 0.85 and 1 (%.3f)', pitch))
+check(pitch >= 0.9 and pitch <= 1.1, string.format('at a pitch between 0.9 and 1.1 (%.3f)', pitch))
 check(lastFile() and not lastFile():find('%.txt$'), 'only sound files are picked')
 onUpdate(0.016)
 check(#stub.filesPlayed == 1, 'onUpdate does not swap it a second time')
@@ -221,8 +221,8 @@ armorHit('Heavy Armor Hit')
 check(stub.stopped[1] == 'Heavy Armor Hit' and inSet(DEFAULT_ARMOR, lastFile()),
     'heavy armor gets a fleshy armor hit too')
 local pitchOk = true
-for _, p in ipairs(stub.filesPlayed) do pitchOk = pitchOk and p.options.pitch >= 0.85 and p.options.pitch <= 1.0 end
-check(pitchOk, 'hits play at a pitch between 0.85 and 1 too')
+for _, p in ipairs(stub.filesPlayed) do pitchOk = pitchOk and p.options.pitch >= 0.9 and p.options.pitch <= 1.1 end
+check(pitchOk, 'hits play at a pitch between 0.9 and 1.1 too')
 armorHit('Light Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
     weapon = W('ShortBladeOneHand') })
 check(stub.stopped[1] == 'Light Armor Hit' and #stub.filesPlayed == 1
@@ -282,7 +282,7 @@ local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBlade', 'metal' }, folder = 'swing' },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'heavyMetal', 'heavyMetalGeneric', 'metal' }, folder = 'swing' },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'heavyMetalGeneric', 'metal' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'heavyMetalGeneric' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
@@ -293,14 +293,6 @@ pools('Weapon Swish', {
     { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
-local tally, n = {}, 0
-for _ = 1, 28000 do
-    local f = api.pickFile('Weapon Swish', { weapon = W('LongBladeTwoHand') })
-    tally[f] = (tally[f] or 0) + 1
-    n = n + 1
-end
-local swing10 = (tally['sound/fx/item/csoswing/swing10.wav'] or 0) / n
-check(swing10 > 0.05 and swing10 < 0.095, string.format('Swing10, in both heavyMetal and metal, is drawn as often as the rest (%.3f, 1/14 = 0.071)', swing10))
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
 local fleshCases = {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'fleshySlice', 'flesh' } },
@@ -527,7 +519,7 @@ stub.reset()
 local f = api.playSwing(WEAPON.ShortBlade, 0.5)
 local played = stub.filesPlayed[1]
 check(inSet(expected('swing', { 'sharpMetal' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
-check(played.options.volume == 0.5 and played.options.pitch >= 0.85 and played.options.pitch <= 1.0,
+check(played.options.volume == 0.5 and played.options.pitch >= 0.9 and played.options.pitch <= 1.1,
     'at the volume given and a random pitch')
 check(#stub.stopped == 0, 'and stops nothing')
 stub.reset()

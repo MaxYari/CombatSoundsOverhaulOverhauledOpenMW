@@ -23,7 +23,7 @@ If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installin
 [*][b]Light, Medium and Heavy Armor Hit[/b], whenever a hit lands on a piece of armor.
 [/list]
 
-Every CSO sound plays at a slightly random pitch, between 0.85 and 1.
+Every CSO sound plays at a slightly random pitch, between 0.9 and 1.1.
 
 [size=5][b]How the sounds are picked[/b][/size]
 
@@ -35,7 +35,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 [*]Short blades: sharp metallic whooshes.
 [*]One-handed long blades: ringing blade whooshes and generic metallic ones.
 [*]Maces and one-handed axes: heavy metallic whooshes.
-[*]Two-handed swords: heavy metallic whooshes, the more generic heavy ones, and generic metallic ones.
+[*]Two-handed swords: generic heavy metallic whooshes and generic metallic ones.
 [*]Warhammers and battle axes: heavy metallic whooshes, plus the more generic heavy ones.
 [*]Spears: generic heavy metallic whooshes.
 [*]Staves: plain, metallic and generic heavy whooshes.
@@ -116,7 +116,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 [*][font=Courier New]weapon[/font] and [font=Courier New]attacker[/font]: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
 [*][font=Courier New]attackType[/font]: one of [font=Courier New]I.Combat.ATTACK_TYPES[/font], for a hit. A thrust with a weapon picks the stabs.
 [*][font=Courier New]force[/font]: play something even when CSO has no sound for the attack.
-[*][font=Courier New]volume[/font] and [font=Courier New]pitch[/font]. The pitch is random between 0.85 and 1 otherwise.
+[*][font=Courier New]volume[/font] and [font=Courier New]pitch[/font]. The pitch is random between 0.9 and 1.1 otherwise.
 [/list]
 [*][font=Courier New]TAGS[/font] lists the ids CSO answers: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font], [font=Courier New]Heavy Armor Hit[/font] and [font=Courier New]Health Damage[/font], in any case.
 [*][font=Courier New]pickFile(tag, options)[/font] returns the CSO file [font=Courier New]emit[/font] would pick, without playing it.
@@ -141,7 +141,7 @@ cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thru
 [list]
 [*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]Ghost[/font] has no hits yet.
 [*][font=Courier New]getBody()[/font] returns what the actor's body counts as when a hit lands on no armor: [font=Courier New]Unarmored[/font], [font=Courier New]Metal[/font], [font=Courier New]Bone[/font] or [font=Courier New]Ghost[/font].
-[*]The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
+[*]The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
 [*]An unknown name is an error, and so is a misspelled enum field such as [font=Courier New]cso.WEAPON.Swrod[/font].
 [/list]
 
