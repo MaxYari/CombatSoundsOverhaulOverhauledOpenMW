@@ -196,12 +196,29 @@ def rewrite(lines, table, categories, renames):
 
 SOUNDS_TABLE = re.compile(r'^local (\w+_SOUNDS) = \{')
 SOUNDS_LINE = re.compile(r"^(\s*)(\w+) = \{([^{}]*)\},(\s*--.*)?$")
+CHANCES_TABLE = re.compile(r'^local (\w+_CHANCES) = \{')
+CHANCES_LINE = re.compile(r'^(\s*)(\w+) = ([\d.]+),(\s*--.*)?$')
 
 
 def follow_references(lines, moved_by_kind):
-    """Point the *_SOUNDS tables at where the categories they name went"""
-    out, table = [], None
+    """Point the *_SOUNDS tables at where the categories they name went, and the *_CHANCES ones too"""
+    out, table, chances = [], None, None
     for line in lines:
+        m = CHANCES_TABLE.match(line)
+        if m:
+            chances = m.group(1)
+        elif chances and line.startswith('}'):
+            chances = None
+        m = CHANCES_LINE.match(line) if chances else None
+        if m:
+            indent, name, chance, comment = m.groups()
+            moved = moved_by_kind['swing' if chances.startswith('SWING') else 'hit']
+            into = moved.get(name, [name])
+            if into != [name]:
+                print(f'  {chances}.{name} -> {", ".join(into) or "nothing"}')
+            for new in into:
+                out.append(f'{indent}{new} = {chance},' + (comment or ''))
+            continue
         m = SOUNDS_TABLE.match(line)
         if m:
             table = m.group(1)
