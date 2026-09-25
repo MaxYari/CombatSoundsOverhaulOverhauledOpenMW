@@ -357,29 +357,31 @@ local function pools(tag, cases, iface)
 end
 local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBladeMetal' }, folder = 'swing' },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBladeMetal', 'bladeMetal', 'plain' }, folder = 'swing' },
     { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'bladeMetal', 'plain' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
-    { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'plain' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'plain' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'bladeMetal', 'ringingBladeMetal' }, folder = 'swing' },
+    { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
+    { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'plain', 'bladeMetal', 'heavyMetal' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'plain', 'bladeMetal', 'heavyMetal' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'bladeMetal', 'ringingBladeMetal', 'plain' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal', 'plain' }, folder = 'swing' },
-    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal' }, folder = 'swing' },
-    { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
+    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal', 'heavyMetal' }, folder = 'swing' },
+    { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'sharpMetalRinging', 'plain' }, folder = 'swing' },
     { label = 'fists', attacker = npc, categories = { 'plain', 'vanilla' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
--- Swords and maces draw the plain whooshes by a share of their own, not by how many files they are
+-- Most weapons draw the plain whooshes by a share of their own, not by how many files they are
 local PLAIN = expected('swing', { 'plain' })
-for _, c in ipairs({ { 'LongBladeOneHand', 0.3, 'a longsword' }, { 'LongBladeTwoHand', 0.3, 'a claymore' },
-    { 'BluntOneHand', 0.5, 'a mace' }, { 'BluntTwoClose', 0.5, 'a warhammer' }, { 'BluntTwoWide', 1 / 3, 'a staff' } }) do
+for _, c in ipairs({ { 'ShortBladeOneHand', 0.3, 'a dagger' }, { 'LongBladeOneHand', 0.3, 'a longsword' },
+    { 'LongBladeTwoHand', 0.3, 'a claymore' }, { 'BluntOneHand', 0.5, 'a mace' }, { 'BluntTwoClose', 0.5, 'a warhammer' },
+    { 'AxeOneHand', 0.3, 'a war axe' }, { 'SpearTwoWide', 0.3, 'a spear thrust', THRUST },
+    { 'BluntTwoWide', 0.5, 'a staff' }, { 'SpearTwoWide', 0.5, 'a spear chop', CHOP } }) do
     local plain, runs = 0, 6000
     for _ = 1, runs do
-        if inSet(PLAIN, api.pickFile('Weapon Swish', { weapon = W(c[1]) })) then plain = plain + 1 end
+        if inSet(PLAIN, api.pickFile('Weapon Swish', { weapon = W(c[1]), attackType = c[4] })) then plain = plain + 1 end
     end
     check(math.abs(plain / runs - c[2]) < 0.03,
         string.format('%s swings a plain whoosh %.3f of the time (%.2f)', c[3], plain / runs, c[2]))
@@ -392,9 +394,19 @@ for _ = 1, 6000 do
         if inSet(expected('swing', { 'ringingBladeMetal' }), f) then ringing = ringing + 1 end
     end
 end
+for _, c in ipairs({ { 'BluntTwoWide', nil, 'a staff' }, { 'SpearTwoWide', CHOP, 'a spear chop' } }) do
+    local blade, heavy = 0, 0
+    for _ = 1, 6000 do
+        local f = api.pickFile('Weapon Swish', { weapon = W(c[1]), attackType = c[2] })
+        if inSet(expected('swing', { 'bladeMetal' }), f) then blade = blade + 1 end
+        if inSet(expected('swing', { 'heavyMetal' }), f) then heavy = heavy + 1 end
+    end
+    check(math.abs(blade / 6000 - 0.4) < 0.03 and math.abs(heavy / 6000 - 0.1) < 0.02,
+        string.format('and the rest of %s: metallic blade %.3f, heavy metal %.3f (0.4, 0.1)', c[3], blade / 6000, heavy / 6000))
+end
 check(math.abs(ringing / oneHanded - 3 / 9) < 0.04,
     string.format("the rest of a longsword's whooshes are its two groups drawn together, by file (%.3f ringing)", ringing / oneHanded))
-local SPEAR_THRUST_SWINGS = expected('swing', { 'bladeMetal', 'ringingBladeMetal' })
+local SPEAR_THRUST_SWINGS = expected('swing', { 'bladeMetal', 'ringingBladeMetal', 'plain' })
 local function spearSwing(attackName, early)
     stub.reset()
     stub.rightHand = W('SpearTwoWide')
@@ -405,8 +417,9 @@ local function spearSwing(attackName, early)
     return lastFile()
 end
 check(inSet(SPEAR_THRUST_SWINGS, spearSwing('thrust')), 'a spear thrust whooshes with metallic and ringing blades')
-check(inSet(expected('swing', { 'plain' }), spearSwing('chop')) and inSet(expected('swing', { 'plain' }), spearSwing('slash')),
-    'its chops and slashes with the plain whooshes')
+local SPEAR_SWINGS = expected('swing', { 'plain', 'bladeMetal', 'heavyMetal' })
+check(inSet(SPEAR_SWINGS, spearSwing('chop')) and inSet(SPEAR_SWINGS, spearSwing('slash')),
+    "its chops and slashes with a staff's whooshes")
 check(inSet(SPEAR_THRUST_SWINGS, spearSwing('thrust', true)), 'an early released thrust is still a thrust')
 stub.rightHand = nil
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
@@ -590,7 +603,7 @@ check(inSet(union(HEAVY_HIT, DEFAULT_FLESH), api.emit('Heavy Armor Hit')) and #p
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
 check(inSet(expected('swing', { 'plain', 'vanilla' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
-check(inSet(expected('swing', { 'sharpMetal', 'ringingBladeMetal' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
+check(inSet(expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
     'options.weapon picks for that weapon')
 stub.selfObject.isCreature = true
 check(api.emit('Weapon Swish') == nil, "a creature's own swing plays nothing")
@@ -696,7 +709,7 @@ check(not pcall(function() return WEAPON.Swrod end), 'a misspelled enum name is 
 stub.reset()
 local f = api.playSwing(WEAPON.ShortBlade, 0.5)
 local played = stub.filesPlayed[1]
-check(inSet(expected('swing', { 'sharpMetal', 'ringingBladeMetal' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
+check(inSet(expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
 check(played.options.volume == 0.5 and played.options.pitch >= 0.9 and played.options.pitch <= 1.1,
     'at the volume given and a random pitch')
 check(#stub.stopped == 0, 'and stops nothing')
@@ -706,7 +719,7 @@ check(stub.filesPlayed[1].options.volume == 1, 'volume is 1 when not given')
 check(api.playSwing(WEAPON.Natural) == nil and api.playSwing(WEAPON.Bow) == nil, 'weapons with no swings play nothing')
 local spearSeen = {}
 for _ = 1, 2000 do spearSeen[api.playSwing(WEAPON.Spear, 1, THRUST)] = true end
-check(sameSet(spearSeen, expected('swing', { 'bladeMetal', 'ringingBladeMetal' })), 'playSwing takes the attack type: a spear thrust')
+check(sameSet(spearSeen, expected('swing', { 'bladeMetal', 'ringingBladeMetal', 'plain' })), 'playSwing takes the attack type: a spear thrust')
 check(not pcall(api.playSwing, WEAPON.Spear, 1, 'jab'), 'a bad attack type for playSwing is an error')
 check(not pcall(api.playSwing, 'Swrod') and not pcall(api.playSwing, WEAPON.Axe, -1)
     and not pcall(api.playSwing, WEAPON.Axe, 'loud'), 'an unknown weapon or a bad volume is an error')
@@ -745,7 +758,7 @@ script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume 
 local swingPlayed = table.remove(stub.filesPlayed, 1)
 table.remove(stub.infos, 1)
 local eventHit = roles()
-check(inSet(expected('swing', { 'bladeMetal', 'ringingBladeMetal' }), swingPlayed.file) and swingPlayed.options.volume == 0.9
+check(inSet(expected('swing', { 'bladeMetal', 'ringingBladeMetal', 'plain' }), swingPlayed.file) and swingPlayed.options.volume == 0.9
     and armorRulesBroken() == nil and (#eventHit.main == 0
         or inSet(expected('hit', { 'armorHeavyBladePureHit', 'stabPure', 'metallicPunchyFleshHit' }), eventHit.main[1].file)),
     'the PlaySwing and PlayHit events do the same')
@@ -888,7 +901,7 @@ check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 
     and sameSet(draws('Health Damage', { weapon = katar }, k), expected('hit', { 'metallicPunchyFleshHit' })),
     'setWeaponKind makes a short blade swing and hit as Blunt, whatever the case of its id')
 check(sameSet(draws('Weapon Swish', { weapon = stub.weapon('other_dagger', 'ShortBladeOneHand') }, k),
-    expected('swing', { 'sharpMetal', 'ringingBladeMetal' })), 'other weapons of its type are left alone')
+    expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' })), 'other weapons of its type are left alone')
 stub.reset()
 stub.rightHand = katar
 stub.windUp('chop')
@@ -909,14 +922,65 @@ k.playSwing(k.WEAPON.HandToHand)
 check(#stub.infos == 2 and stub.infos[1].weaponId == nil and stub.infos[2].weaponId == nil,
     'a punch and playSwing have no weaponId')
 k.setWeaponKind('MY_KATAR_01', nil)
-check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'sharpMetal', 'ringingBladeMetal' })),
+check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' })),
     'setWeaponKind with nil goes back to its record')
 kinds.eventHandlers.CombatSoundsOverhaul_SetWeaponKind({ recordId = 'my_katar_01', weapon = k.WEAPON.Spear })
-check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'plain' })), 'so does the SetWeaponKind event')
+check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'plain', 'bladeMetal', 'heavyMetal' })),
+    'so does the SetWeaponKind event')
 check(not pcall(k.setWeaponKind, 'my_katar_01', 'Knuckles') and not pcall(k.setWeaponKind, nil, k.WEAPON.Blunt),
     'an unknown kind or a missing record id is an error')
-check(sameSet(draws('Weapon Swish', { weapon = katar }), expected('swing', { 'sharpMetal', 'ringingBladeMetal' })),
+check(sameSet(draws('Weapon Swish', { weapon = katar }), expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' })),
     'and it is kept per actor: the main copy never heard of it')
+
+print('\n== swing groups handlers ==')
+local grouped = loadScript(true)
+local g = grouped.interface
+local myKatar = stub.weapon('Katar_Steel', 'ShortBladeOneHand')
+g.addSwingGroupsHandler(function(recordId)
+    if recordId:lower():find('katar') then return { g.SWING_GROUPS.sharpMetal } end
+end)
+check(sameSet(draws('Weapon Swish', { weapon = myKatar }, g), expected('swing', { 'sharpMetal' })),
+    'a handler gives a weapon its own swing groups')
+check(sameSet(draws('Weapon Swish', { weapon = W('ShortBladeOneHand') }, g),
+    expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' })), 'other daggers keep theirs')
+stub.reset()
+stub.rightHand = myKatar
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+check(inSet(expected('swing', { 'sharpMetal' }), lastFile()) and stub.infos[1].category == 'sharpMetal',
+    'and a real swing with it plays them')
+g.addSwingGroupsHandler(function(recordId)
+    if recordId == 'shy_katar' then return {} end
+    if recordId == 'odd_katar' then return { 'swrod', 'vanilla' } end
+end)
+check(sameSet(draws('Weapon Swish', { weapon = myKatar }, g), expected('swing', { 'sharpMetal' })),
+    'nil leaves the weapon to the older handlers')
+stub.reset()
+stub.rightHand = stub.weapon('shy_katar', 'ShortBladeOneHand')
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+grouped.engineHandlers.onUpdate(0.016)
+check(#stub.filesPlayed == 0 and #stub.stopped == 0, 'an empty list leaves the vanilla swish alone')
+local oddLines = {}
+local printBefore = print
+_G.print = function(line) oddLines[#oddLines + 1] = line end
+local oddSeen = draws('Weapon Swish', { weapon = stub.weapon('odd_katar', 'ShortBladeOneHand') }, g)
+_G.print = printBefore
+check(sameSet(oddSeen, expected('swing', { 'vanilla' })) and #oddLines == 1 and oddLines[1]:find('swrod', 1, true) ~= nil,
+    'a group that does not exist is left out, with one warning')
+g.addSwingGroupsHandler(function(recordId) if recordId == 'singing_bow' then return { g.SWING_GROUPS.plain } end end)
+stub.reset()
+stub.rightHand = stub.weapon('singing_bow', 'MarksmanBow')
+stub.windUp('shoot')
+stub.enginePlays('Weapon Swish')
+grouped.engineHandlers.onUpdate(0.016)
+check(inSet(PLAIN, lastFile()), 'a weapon whose kind has no swings gets them from a handler, early release too')
+check(g.SWING_GROUPS.vanilla == 'vanilla' and g.SWING_GROUPS.sharpMetalRinging == 'sharpMetalRinging'
+    and not pcall(function() return g.SWING_GROUPS.swrod end), 'SWING_GROUPS names the swing groups and nothing else')
+check(not pcall(g.addSwingGroupsHandler, 'nope'), 'a groups handler has to be a function')
+stub.rightHand = nil
 
 print('\n== volume settings ==')
 stub.isPlayer = true

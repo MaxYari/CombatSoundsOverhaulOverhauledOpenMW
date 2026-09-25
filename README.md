@@ -36,14 +36,16 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Swings, by weapon:**
 
-- Short blades: sharp metallic whooshes and ringing blade ones.
+Every weapon has some plain whooshes in its mix.
+
+- Short blades: sharp metallic whooshes, ringing ones and ringing blade ones, and 30% of the time a plain one.
 - One-handed long blades: ringing blade whooshes and metallic blade ones, and 30% of the time a plain one.
 - Two-handed swords: metallic blade whooshes, and 30% of the time a plain one.
 - Maces and warhammers: heavy metallic whooshes half the time, plain ones the other half.
-- Axes: heavy metallic whooshes.
-- Spears: metallic blade and ringing blade whooshes for a thrust, plain ones for chops and slashes.
-- Staves: plain and metallic blade whooshes.
-- Thrown weapons: sharp metallic and plain whooshes.
+- Axes: heavy metallic whooshes, and 30% of the time a plain one.
+- Staves, and spears' chops and slashes: plain whooshes half the time, metallic blade ones 40% and heavy metallic ones 10%.
+- A spear's thrust: metallic blade and ringing blade whooshes, and 30% of the time a plain one.
+- Thrown weapons: sharp metallic, ringing and plain whooshes.
 - Hand-to-hand: plain whooshes and the vanilla ones, whichever files the game's swish sounds play.
 
 **Hits, by what they land on:**
@@ -65,7 +67,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 Whatever a hit lands on, a ring plays on top of it one time in four: a ringing blade for blades and axes, a blunt ring for maces and warhammers. On armor the ring comes whether the armor impact played or only the flesh under it. Thrusts, staves, fists, arrows, spears' swings and claws don't ring.
 
-When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The exceptions are the plain whooshes of swords, maces and warhammers, which have a set share, and the rings, which are separate layers with a chance of their own.
+When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The exceptions are the swings with set shares above, and the rings, which are separate layers with a chance of their own.
 
 A thrust only counts as one for a melee attack made with a weapon.
 
@@ -150,6 +152,19 @@ cso.setWeaponKind('my_katana', nil) -- back to what its record says
 
 - The record id can be in any case. The kind is one of `WEAPON`.
 - It applies to the actor's swings with that weapon, and to hits the actor takes from it. Like the rest of the interface it is per actor, so call it from a script attached to every NPC, creature and the player, for instance as that script loads.
+
+A weapon can also keep its kind and swing with other groups of whooshes. `SWING_GROUPS` names the groups, such as `sharpMetal`, `bladeMetal` or `plain`, and `vanilla` for the game's own swishes. `addSwingGroupsHandler(handler)` calls `handler(recordId)` on every swing with a weapon:
+
+```lua
+cso.addSwingGroupsHandler(function(recordId)
+    if recordId:find('katar') then return { cso.SWING_GROUPS.sharpMetal } end
+end)
+```
+
+- Return a list of `SWING_GROUPS` for the weapon to swing with, or `nil` to leave it to older handlers and then to its kind. Handlers run newest first.
+- An empty list leaves the vanilla swish alone.
+- A name that isn't in `SWING_GROUPS` is left out, with a warning in `openmw.log`.
+- It's per actor too. It runs on every swing, so keep it quick.
 
 ### Hearing about a sound before it plays
 

@@ -54,10 +54,11 @@ local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
 -- tools/sound_sorting.py lays these out as folders of copies to sort by ear, and writes them back here.
 local SWING_CATEGORIES = {
     plain = { { 21, 23 } },                 -- generic, no metal: hand-to-hand, staves, spears' swings
-    sharpMetal = { { 1, 5 } },              -- short blades, daggers
+    sharpMetal = { { 1, 3 } },              -- short blades, daggers
     bladeMetal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves, spears' thrusts
     ringingBladeMetal = { { 24, 26 } },     -- like bladeMetal, sharper and with a ring: long blades, daggers, spears' thrusts
     heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, warhammers, axes
+    sharpMetalRinging = { 4, 5 },
 }
 -- Hit68, Hit97 and Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
@@ -85,23 +86,28 @@ local HIT_CATEGORIES = {
 -- longBladeThrust), then `thrust`, then the plain ones. `default` covers the rest; without one, the vanilla sound
 -- stays. Every file of every listed category goes into one draw, so a bigger category comes up more often.
 local SWING_SOUNDS = {
-    shortBlade = { 'sharpMetal', 'ringingBladeMetal' },
+    shortBlade = { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' },
     longBlade1 = { 'ringingBladeMetal', 'bladeMetal', 'plain' },
     longBlade2 = { 'bladeMetal', 'plain' },
     blunt = { 'heavyMetal', 'plain' }, -- maces and warhammers
-    axe = { 'heavyMetal' },
-    spear = { 'plain' },
-    spearThrust = { 'bladeMetal', 'ringingBladeMetal' },
-    staff = { 'plain', 'bladeMetal' },
-    thrown = { 'sharpMetal', 'plain' },
+    axe = { 'heavyMetal', 'plain' },
+    spear = { 'plain', 'bladeMetal', 'heavyMetal' }, -- chops and slashes, as a staff
+    spearThrust = { 'bladeMetal', 'ringingBladeMetal', 'plain' },
+    staff = { 'plain', 'bladeMetal', 'heavyMetal' },
+    thrown = { 'sharpMetal', 'sharpMetalRinging', 'plain' },
     handToHand = { 'plain', 'vanilla' },
 }
 -- SWING_SOUNDS keys that don't draw from all their files together: a group named here comes up this often, and the
 -- key's other groups share the rest, drawn from together as usual
 local SWING_SHARES = {
+    shortBlade = { plain = 0.3 },
     longBlade1 = { plain = 0.3 },
     longBlade2 = { plain = 0.3 },
     blunt = { plain = 0.5 },
+    axe = { plain = 0.3 },
+    spearThrust = { plain = 0.3 },
+    staff = { plain = 0.5, bladeMetal = 0.4, heavyMetal = 0.1 },
+    spear = { plain = 0.5, bladeMetal = 0.4, heavyMetal = 0.1 },
 }
 -- Categories that aren't CSO files. vanilla is what the vanilla swing sounds play, read from their records, so a mod
 -- that replaces those files is heard here too.
@@ -295,6 +301,10 @@ local function invert(t)
 end
 local NAME_OF_WEAPON = invert(WEAPON_BY_NAME)
 local NAME_OF_SURFACE = invert(ARMOR_BY_NAME)
+-- The groups of swings, for the interface: SWING_CATEGORIES and the vanilla swishes
+local SWING_GROUP_BY_NAME = {}
+for name in pairs(SWING_CATEGORIES) do SWING_GROUP_BY_NAME[name] = name end
+for name in pairs(BUILTIN_CATEGORIES.swing) do SWING_GROUP_BY_NAME[name] = name end
 local function enum(byName)
     local t = {}
     for name in pairs(byName) do t[name] = name end
@@ -555,11 +565,47 @@ local function rollLayers(folder, soundsTables, weapon, attackType)
     return rolled
 end
 
--- A random CSO file for a vanilla tag and an attack made with `weapon`
-local function pickFor(tag, weapon, force, attackType)
+-- Handlers from addSwingGroupsHandler, newest first: a weapon's record id -> the swing groups it uses, or nil
+local swingGroupsHandlers = {}
+-- The swing groups a handler from addSwingGroupsHandler gives this weapon, or nil for the ones its kind uses
+local unknownGroups = {}
+local function swingGroupsOf(weaponId)
+    if not weaponId then return nil end
+    for i = #swingGroupsHandlers, 1, -1 do
+        local groups = swingGroupsHandlers[i](weaponId)
+        if groups ~= nil then
+            local known = {}
+            for _, group in ipairs(groups) do
+                if SWING_GROUP_BY_NAME[group] then
+                    known[#known + 1] = group
+                elseif not unknownGroups[group] then
+                    unknownGroups[group] = true
+                    print('[Combat Sounds Overhaul] A swing groups handler gave ' .. tostring(group)
+                        .. ', which is not one of SWING_GROUPS; it is left out')
+                end
+            end
+            return known
+        end
+    end
+    return nil
+end
+
+-- Whether an attack has CSO swings, from its weapon's own groups or its kind's
+local function hasSwings(attack)
+    local groups = swingGroupsOf(attack.weaponId)
+    if groups then return #groups > 0 end
+    return lookup(SWING_SOUNDS, attack.weapon) ~= nil
+end
+
+-- A random CSO file for a vanilla tag and an attack
+local function pickFor(tag, attack, force)
     local folder = TAGS[tag:lower()]
-    if folder == 'swing' then return pickFrom('swing', SWING_TABLES, weapon, force, attackType) end
-    if folder then return pickFrom('hit', HIT_SOUNDS[landsOn(tag)], weapon, force, attackType) end
+    if folder == 'swing' then
+        local groups = swingGroupsOf(attack.weaponId)
+        if groups then return drawFrom('swing', groups) end
+        return pickFrom('swing', SWING_TABLES, attack.weapon, force, attack.attackType)
+    end
+    if folder then return pickFrom('hit', HIT_SOUNDS[landsOn(tag)], attack.weapon, force, attack.attackType) end
     return nil
 end
 
@@ -708,7 +754,7 @@ local function swap(tag, options, via, attack)
             attack = { attackType = options.attackType }
         end
     end
-    local file = pickFor(tag, attack.weapon, options.force, attack.attackType)
+    local file = pickFor(tag, attack, options.force)
     if not file then return nil end
 
     if folder ~= 'body' then sound.stopSound3d(tag, self) end
@@ -777,7 +823,7 @@ I.AnimationController.addPlayBlendedAnimationHandler(function(_, options)
     if endsWith(startKey, ' max attack') then
         windupUntil = nil
         swapIfPlaying(WEAPON_SWISH, 'release', swinging(attackTypeOf(startKey)))
-    elseif endsWith(stopKey, ' max attack') and lookup(SWING_SOUNDS, swinging().weapon) then
+    elseif endsWith(stopKey, ' max attack') and hasSwings(swinging()) then
         windupUntil = core.getSimulationTime() + WINDUP_WATCH
         windupAttack = attackTypeOf(stopKey)
     end
@@ -923,16 +969,38 @@ return {
         -- @param weapon One of WEAPON, or nil to go back to what its record says
         setWeaponKind = setWeaponKind,
 
+        --- The groups CSO's swings are sorted into, e.g. sharpMetal, bladeMetal or plain, and vanilla for the files the
+        -- game's own swish sounds play.
+        SWING_GROUPS = enum(SWING_GROUP_BY_NAME),
+
+        --- Adds a handler that picks the swing groups a weapon uses, in place of the ones its kind would. It gets the
+        -- weapon's record id on each swing with it, and returns a list of SWING_GROUPS, or nil to leave the weapon
+        -- to the older handlers and then to its kind. An empty list leaves the vanilla swish alone. Newest handler
+        -- first. It is per actor, like the rest of the interface.
+        -- @usage cso.addSwingGroupsHandler(function(recordId)
+        --     if recordId == 'my_katar' then return { cso.SWING_GROUPS.sharpMetal } end
+        -- end)
+        -- @param #function handler function(recordId)
+        addSwingGroupsHandler = function(handler)
+            if type(handler) ~= 'function' then
+                error('CombatSoundsOverhaul.addSwingGroupsHandler: handler must be a function', 2)
+            end
+            swingGroupsHandlers[#swingGroupsHandlers + 1] = handler
+        end,
+
         --- A CSO file for a vanilla tag, picked as emit would pick it, without playing it. nil if nothing answers.
         pickFile = function(tag, options)
             options = options or {}
-            local weapon
+            local attackType = checkAttackType(options.attackType, 'pickFile')
+            local attack
             if options.weapon or options.attacker then
-                weapon = weaponKind(options.weapon, options.attacker)
+                attack = attackWith(options.weapon, options.attacker, attackType)
             elseif TAGS[tostring(tag):lower()] == 'swing' then
-                weapon = swinging().weapon
+                attack = swinging(attackType)
+            else
+                attack = { attackType = attackType }
             end
-            return pickFor(tostring(tag), weapon, options.force, checkAttackType(options.attackType, 'pickFile'))
+            return pickFor(tostring(tag), attack, options.force)
         end,
 
         --- Prints every CSO sound this actor plays: what set it off, what the attack was made with, what it landed on,
