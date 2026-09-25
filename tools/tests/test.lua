@@ -280,15 +280,15 @@ local function pools(tag, cases, iface)
 end
 local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal' }, folder = 'swing' },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBlade' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBlade', 'metal' }, folder = 'swing' },
     { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'metal' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'metal', 'heavyMetal' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'metal', 'ringingBlade', 'plain' }, folder = 'swing' },
+    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'metal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
     { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
 })
@@ -426,7 +426,7 @@ check(inSet(DEFAULT_ARMOR, api.emit('Heavy Armor Hit')), 'emit plays a CSO hit f
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
 check(inSet(expected('swing', { 'plain' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
-check(inSet(expected('swing', { 'sharpMetal' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
+check(inSet(expected('swing', { 'sharpMetal', 'ringingBlade' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
     'options.weapon picks for that weapon')
 stub.selfObject.isCreature = true
 check(api.emit('Weapon Swish') == nil, "a creature's own swing plays nothing")
@@ -518,7 +518,7 @@ check(not pcall(function() return WEAPON.Swrod end), 'a misspelled enum name is 
 stub.reset()
 local f = api.playSwing(WEAPON.ShortBlade, 0.5)
 local played = stub.filesPlayed[1]
-check(inSet(expected('swing', { 'sharpMetal' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
+check(inSet(expected('swing', { 'sharpMetal', 'ringingBlade' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
 check(played.options.volume == 0.5 and played.options.pitch >= 0.9 and played.options.pitch <= 1.1,
     'at the volume given and a random pitch')
 check(#stub.stopped == 0, 'and stops nothing')
@@ -557,7 +557,7 @@ check(not pcall(api.emit, 'Heavy Armor Hit', { attackType = 'stab' }) and not pc
 stub.reset()
 script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9 })
 script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
-check(inSet(expected('swing', { 'heavyMetal' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
+check(inSet(expected('swing', { 'metal', 'ringingBlade', 'plain' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
     and inSet(expected('hit', { 'armorFlesh', 'armorStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
     'the PlaySwing and PlayHit events do the same')
 

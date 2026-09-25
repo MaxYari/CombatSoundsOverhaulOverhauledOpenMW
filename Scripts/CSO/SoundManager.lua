@@ -53,11 +53,11 @@ local DUPLICATES = {
 -- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them. A file can
 -- be in more than one category.
 local SWING_CATEGORIES = {
-    plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, maybe staves
+    plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, staves, spears
     sharpMetal = { { 1, 6 } },         -- short blades, daggers
-    metal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves
-    ringingBlade = { { 24, 26 } },     -- one-handed long blades: like metal, but sharper and with a ring
-    heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, axes, polearms, spears, staves
+    metal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves, spears
+    ringingBlade = { { 24, 26 } },     -- like metal, but sharper and with a ring: long blades, daggers, spears
+    heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, warhammers, axes
 }
 -- Hit68, Hit97 and Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
@@ -84,13 +84,13 @@ local HIT_CATEGORIES = {
 -- longBladeThrust), then the plain ones, then `thrust`. `default` covers the rest; without one, the vanilla sound
 -- stays. Every file of every listed category is in the draw.
 local SWING_SOUNDS = {
-    shortBlade = { 'sharpMetal' },
+    shortBlade = { 'sharpMetal', 'ringingBlade' },
     longBlade1 = { 'ringingBlade', 'metal' },
     longBlade2 = { 'metal' },
     blunt = { 'heavyMetal' },
     axe = { 'heavyMetal' },
-    spear = { 'heavyMetal' },
-    staff = { 'plain', 'metal', 'heavyMetal' },
+    spear = { 'metal', 'ringingBlade', 'plain' },
+    staff = { 'plain', 'metal' },
     thrown = { 'sharpMetal', 'plain' },
     handToHand = { 'plain' },
 }
