@@ -70,6 +70,15 @@ When an attack has several sound groups, every file of every group goes into one
 
 A thrust only counts as one for a melee attack made with a weapon.
 
+## Sounds for kinds of creatures
+
+Sounds put in a folder named for a class of creature play on top of every hit such a creature takes, whatever hits it. The folders go in `Sound/Fx/Item/CSOCreature/`, in this mod or any mod loaded after it:
+
+- `Ghost`, `Skeleton` and `Metal`, from what the actor's body is: ghosts, spectres and spirits; skeletons, liches and bonelords; Dwemer machines.
+- `Creatures`, `Daedra`, `Undead` and `Humanoid`, from the creature type in its record.
+
+A creature can be in two classes, such as a ghost, which is also undead. The first of these with sounds in its folder plays: the class from its body before the one from its type. Each hit plays one file from the folder, picked at random. The folders are empty to start with, so nothing plays until sounds are added.
+
 ## The body hit sound
 
 Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\body hit.wav`), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
@@ -135,6 +144,7 @@ cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thru
 
 - Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `HandToHand` plays one of the vanilla swish files.
 - `getBody()` returns what the actor's body counts as when a hit lands on no armor: `Unarmored`, `Metal`, `Bone` or `Ghost`.
+- `getCreatureClasses()` returns the actor's classes for the creature sound folders, first the one that goes first, for example `{ 'Ghost', 'Undead' }`.
 - The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
 - An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
 

@@ -883,6 +883,65 @@ for _, c in ipairs({ { WEAPON.LongBlade, THRUST, 'a longsword thrust' }, { WEAPO
     check(rate == 0, c[3] .. ' never rings')
 end
 
+print('\n== creature sounds ==')
+local CREATURE_FILES = {
+    'sound/fx/item/csocreature/ghost/wail1.wav', 'sound/fx/item/csocreature/ghost/wail2.ogg',
+    'sound/fx/item/csocreature/skeleton/rattle.wav', 'sound/fx/item/csocreature/undead/moan.wav',
+    'sound/fx/item/csocreature/daedra/hiss.wav', 'sound/fx/item/csocreature/daedra/notes.txt',
+}
+local vfsBefore = stub.vfsPaths
+stub.vfsPaths = {}
+for _, p in ipairs(vfsBefore) do stub.vfsPaths[#stub.vfsPaths + 1] = p end
+for _, p in ipairs(CREATURE_FILES) do stub.vfsPaths[#stub.vfsPaths + 1] = p end
+local UNDEAD = stub.CREATURE_TYPE.Undead
+-- 30 hits on an actor of this blood, record and kind, by a longsword: the creature sounds that play, and its classes
+local function creatureHit(bloodType, record, isCreature, attack)
+    stub.bloodType, stub.record, stub.selfObject.isCreature = bloodType, record, isCreature
+    local s = loadScript(true)
+    local heard = {}
+    for _ = 1, 30 do
+        stub.reset()
+        stub.hit(attack or { successful = true, damage = { health = 5 }, attacker = npc, weapon = W('LongBladeOneHand') })
+        stub.enginePlays('Health Damage')
+        s.engineHandlers.onUpdate(0.016)
+        for _, i in ipairs(stub.infos) do
+            if i.file:find('csocreature', 1, true) then heard[#heard + 1] = i end
+        end
+    end
+    local classes = s.interface.getCreatureClasses()
+    stub.bloodType, stub.record, stub.selfObject.isCreature = 0, {}, nil
+    return heard, classes
+end
+local function allOf(heard, class, files)
+    if #heard ~= 30 then return false end
+    for _, i in ipairs(heard) do
+        if i.category ~= class or not files[i.file] or not i.layered or i.underneath then return false end
+    end
+    return true
+end
+local heard, classes = creatureHit(1, { name = 'Ancestor Ghost', model = 'r\\ancestorghost.nif', type = UNDEAD }, true)
+check(allOf(heard, 'Ghost', { ['sound/fx/item/csocreature/ghost/wail1.wav'] = true, ['sound/fx/item/csocreature/ghost/wail2.ogg'] = true }),
+    'a ghost gets a sound from Ghost/ on top of every hit, and not from Undead/')
+check(#classes == 2 and classes[1] == 'Ghost' and classes[2] == 'Undead', 'getCreatureClasses: Ghost, then Undead')
+heard = creatureHit(1, { name = 'Skeleton Warrior', model = 'r\\skeleton.nif', type = UNDEAD }, true,
+    { successful = true, damage = { health = 5 }, attacker = creature })
+check(allOf(heard, 'Skeleton', { ['sound/fx/item/csocreature/skeleton/rattle.wav'] = true }),
+    'a skeleton gets Skeleton/, whatever hits it: claws too')
+heard = creatureHit(0, { name = 'Bonewalker', model = 'r\\bonewalker.nif', type = UNDEAD }, true)
+check(allOf(heard, 'Undead', { ['sound/fx/item/csocreature/undead/moan.wav'] = true }),
+    'a bonewalker bleeds, so it gets Undead/ from its type')
+heard = creatureHit(0, { name = 'Dremora', model = 'r\\dremora.nif', type = stub.CREATURE_TYPE.Daedra }, true)
+check(allOf(heard, 'Daedra', { ['sound/fx/item/csocreature/daedra/hiss.wav'] = true }), 'a dremora gets Daedra/, sounds only')
+local machineClasses
+heard, machineClasses = creatureHit(2, { name = 'Steam Centurion', model = 'r\\steam_centurion.nif', type = stub.CREATURE_TYPE.Creatures }, true)
+check(#heard == 0 and machineClasses[1] == 'Metal' and machineClasses[2] == 'Creatures',
+    'a centurion is Metal, then Creatures, and neither folder has sounds')
+heard = creatureHit(0, { name = 'Guar', model = 'r\\guar.nif', type = stub.CREATURE_TYPE.Creatures }, true)
+check(#heard == 0, 'nor does an animal')
+heard, classes = creatureHit(0, { name = 'Guard' }, nil)
+check(#heard == 0 and #classes == 0, 'an NPC of flesh has no class')
+stub.vfsPaths = vfsBefore
+
 print('\n== vanilla swishes for fists ==')
 local fists = loadScript(true)
 local fistFiles, fistRuns = {}, 6000

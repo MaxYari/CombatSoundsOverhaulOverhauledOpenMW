@@ -247,6 +247,17 @@ local BODY_BY_BLOOD = { [1] = 'bone', [2] = 'metal' }
 -- Vanilla gives ghosts the same bone dust as skeletons. An actor that doesn't bleed red and has one of these in its
 -- name, model or record id is a ghost instead; that also catches ghosts a mod moved to a blood type of their own.
 local GHOST_WORDS = { 'ghost', 'spectre', 'specter', 'spirit', 'haunt', 'wraith', 'phantom', 'apparition' }
+-- Sounds for a kind of creature, on top of every hit it takes whatever hit it: one folder per class here, e.g.
+-- Sound/Fx/Item/CSOCreature/Ghost/. An actor's classes are its body's, then for a creature its record's type; the
+-- first one whose folder has sounds in it plays.
+local CREATURE_DIR = 'sound/fx/item/csocreature/'
+local CLASS_OF_BODY = { ghost = 'Ghost', bone = 'Skeleton', metal = 'Metal' }
+local CLASS_OF_TYPE = {
+    [types.Creature.TYPE.Creatures] = 'Creatures',
+    [types.Creature.TYPE.Daedra] = 'Daedra',
+    [types.Creature.TYPE.Undead] = 'Undead',
+    [types.Creature.TYPE.Humanoid] = 'Humanoid',
+}
 
 -- Weapon.TYPE -> what CSO calls it: the family, and the hands it takes
 local Weapon = types.Weapon
@@ -452,6 +463,36 @@ local function bodyType()
         end
     end
     return body
+end
+
+-- This actor's classes for the creature sound folders, most particular first
+local function creatureClasses()
+    local classes = { CLASS_OF_BODY[bodyType()] }
+    if types.Creature.objectIsInstance(self.object) then
+        classes[#classes + 1] = CLASS_OF_TYPE[self.object.type.record(self.object).type]
+    end
+    return classes
+end
+
+-- The sounds of the first of this actor's classes that has any, as { class, files }, or false. Looked for at the
+-- first hit.
+local creatureSounds = nil
+local function creatureSoundsOf()
+    if creatureSounds == nil then
+        creatureSounds = false
+        for _, class in ipairs(creatureClasses()) do
+            local found = {}
+            for path in vfs.pathsWithPrefix(CREATURE_DIR .. class:lower() .. '/') do
+                if SOUND_EXTENSIONS[path:match('%.(%w+)$')] then found[#found + 1] = path end
+            end
+            if #found > 0 then
+                for _, path in ipairs(found) do categoryOf[path] = class end
+                creatureSounds = { class = class, files = found }
+                break
+            end
+        end
+    end
+    return creatureSounds
 end
 
 -- Whether an attack counts as a thrust: a melee attack made with a weapon, of I.Combat.ATTACK_TYPES.Thrust. An
@@ -737,6 +778,11 @@ local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
     for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
         play(layer, 'hit', surface, attack, tag, via, volume, nil, 'layer')
     end
+    -- and what this kind of creature sounds like when hit, whatever hit it
+    local creature = creatureSoundsOf()
+    if creature then
+        play(creature.files[math.random(#creature.files)], 'hit', surface, attack, tag, via, volume, nil, 'layer')
+    end
     return played
 end
 
@@ -912,6 +958,16 @@ return {
         --- What this actor's body counts as when a hit lands on no armor: one of ARMOR, but only Unarmored (flesh and
         -- blood), Metal, Bone or Ghost. Read from its blood type, and for ghosts its name and model.
         getBody = function() return NAME_OF_SURFACE[bodyType()] end,
+
+        --- This actor's classes for the creature sound folders (Sound/Fx/Item/CSOCreature/<class>/), most particular
+        -- first: Ghost, Skeleton or Metal from its body, then for a creature Creatures, Daedra, Undead or Humanoid from
+        -- its record. The first whose folder has sounds plays on top of every hit it takes.
+        -- @return #list<#string>
+        getCreatureClasses = function()
+            local copy = {}
+            for i, class in ipairs(creatureClasses()) do copy[i] = class end
+            return copy
+        end,
 
         --- Plays a CSO swing on this actor for a weapon, at a random pitch between 0.9 and 1.1.
         -- @param weapon One of WEAPON

@@ -54,12 +54,14 @@ local selfObject = { recordId = 'test_actor' }
 M.selfObject = selfObject
 M.isPlayer = false
 M.bloodType = 0
-M.record = {} -- name, model, id of the actor's record
+M.record = {} -- name, model, id and, for a creature, type of the actor's record
 selfObject.type = {
     record = function()
-        return { bloodType = M.bloodType, name = M.record.name, model = M.record.model, id = M.record.id }
+        return { bloodType = M.bloodType, name = M.record.name, model = M.record.model, id = M.record.id,
+            type = M.record.type }
     end,
 }
+M.CREATURE_TYPE = { Creatures = 0, Daedra = 1, Undead = 2, Humanoid = 3 }
 
 M.WEAPON_TYPE = {
     ShortBladeOneHand = 0, LongBladeOneHand = 1, LongBladeTwoHand = 2, BluntOneHand = 3, BluntTwoClose = 4,
@@ -136,7 +138,7 @@ M.packages = {
             end,
         },
         Player = { objectIsInstance = function() return M.isPlayer end },
-        Creature = { objectIsInstance = function(obj) return obj.isCreature == true end },
+        Creature = { TYPE = M.CREATURE_TYPE, objectIsInstance = function(obj) return obj.isCreature == true end },
         Weapon = {
             TYPE = M.WEAPON_TYPE,
             objectIsInstance = function(obj) return obj.isWeapon == true end,
