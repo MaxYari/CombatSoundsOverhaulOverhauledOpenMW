@@ -3,3 +3,6 @@ nexus-upload.zip
 
 # Copies of CSO's sounds to sort by ear (tools/sound_sorting.py); the game plays CSO's own
 /sorting/
+
+# Python bytecode from running the tools
+__pycache__/

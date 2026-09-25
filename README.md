@@ -38,15 +38,15 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Hits, by what they land on:**
 
-- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through, plus the flesh impacts the weapon would get on light armor. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
+- Medium and heavy armor: medium armor impacts, plus the flesh impacts the weapon would get on light armor. A thrust with a blade or spear adds a blunt ring, and everything else a crunchy flesh one with a blunt ring.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
   - Short blades: slices and flesh impacts.
   - Long blades: flesh impacts.
   - A thrust with a blade or spear: stabs. Blades keep their flesh impacts among them.
-  - Blunt weapons: crunches and punches.
-  - Fists: punches, crunches and flesh impacts.
+  - Blunt weapons: metallic punchy flesh impacts.
+  - Fists: metallic punchy and flesh impacts.
   - Everything else, spears' swings included: flesh and punchy impacts.
-- Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
+- Dwemer machines get clean heavy armor clanks, with ringing metal-on-metal ones added for blades.
 - Skeletons, liches and bonelords get plain metallic hits, or plain stabs for a thrust, whatever the weapon.
 - Ghosts, spectres and spirits have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
 
@@ -65,10 +65,7 @@ Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\
 - Hits that don't land on armor get a CSO impact on top of the body hit.
 - Hand-to-hand swings get plain CSO whooshes. The original left them vanilla.
 - Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
-- The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders and sorting them into groups by the number in their names. A few are left out:
-  - `Swing6`, a near copy of `Swing5`.
-  - `Hit18` to `Hit21`, `Hit30` to `Hit32` and `Hit57` to `Hit60`, plain armor clanks. The plain heavy clanks only play on Dwemer machines.
-  - `Hit68`, `Hit97` and `Hit98`, which aren't sorted yet.
+- The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders and sorting them into groups by the number in their names. A file in no group never plays. `Swing6`, a near copy of `Swing5`, is one of these.
 - Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
 
 ## For developers

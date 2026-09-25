@@ -6,7 +6,8 @@
 
 sorting/swing/<category>/SwingN.wav and sorting/hit/<category>/HitN.wav are copies to move between folders; the
 number in the name is what counts. A new folder is a new category, and _unused holds the files in none, which
-never play. The game never reads sorting/, and git ignores it: the script keeps playing CSO's own files, picked by
+never play. When a category's folder is renamed, split or merged, the *_SOUNDS tables are pointed at wherever its
+files went, and each change is printed to check. The game never reads sorting/, and git ignores it: the script keeps playing CSO's own files, picked by
 the categories import writes into Scripts/CSO/SoundManager.lua. A category's comment there is kept, and a new one
 is added at the end of its table, so it still has to be put in a *_SOUNDS table to be heard.
 
@@ -147,17 +148,38 @@ def read_sorting(kind):
     return categories, seen
 
 
-def rewrite(lines, table, categories):
+def follow(old, categories):
+    """old category that has no folder now -> the categories holding its files now, most of them first"""
+    moved = {}
+    for name in set(old) - set(categories):
+        counts = {new: len(old[name] & numbers) for new, numbers in categories.items()}
+        moved[name] = sorted((n for n, c in counts.items() if c), key=lambda n: (-counts[n], n))
+    return moved
+
+
+def renamed(old, categories, moved):
+    """new category -> the old one it's a rename of: that old one's files all went there and make most of it"""
+    renames = {}
+    for name, into in moved.items():
+        if len(into) == 1 and into[0] not in old and len(old[name] & categories[into[0]]) * 2 > len(categories[into[0]]):
+            renames.setdefault(into[0], name)
+    return renames
+
+
+def rewrite(lines, table, categories, renames):
     start, end = table_span(lines, table)
     out, written = [], set()
+    old_to_new = {o: n for n, o in renames.items()}
     for line in lines[start + 1:end]:
         m = CATEGORY_LINE.match(line)
         if not m:
             out.append(line)
             continue
         indent, name, _, gap, comment = m.groups()
-        if name not in categories:
-            print(f'  {table}.{name}: its folder is gone, dropped')
+        if name in old_to_new:
+            # renamed: same place, but the comment described the old name
+            name, comment = old_to_new[name], None
+        elif name not in categories:
             continue
         code = f'{indent}{name} = {format_entries(categories[name])},'
         if comment:
@@ -167,26 +189,96 @@ def rewrite(lines, table, categories):
         written.add(name)
     indent = next((CATEGORY_LINE.match(l).group(1) for l in lines[start + 1:end] if CATEGORY_LINE.match(l)), '    ')
     for name in sorted(set(categories) - written):
-        print(f'  {table}.{name}: new category - add it to a *_SOUNDS table to hear it')
         out.append(f'{indent}{name} = {format_entries(categories[name])},')
     return lines[:start + 1] + out + lines[end:]
+
+
+SOUNDS_TABLE = re.compile(r'^local (\w+_SOUNDS) = \{')
+SOUNDS_LINE = re.compile(r"^(\s*)(\w+) = \{([^{}]*)\},(\s*--.*)?$")
+
+
+def follow_references(lines, moved_by_kind):
+    """Point the *_SOUNDS tables at where the categories they name went"""
+    out, table = [], None
+    for line in lines:
+        m = SOUNDS_TABLE.match(line)
+        if m:
+            table = m.group(1)
+        elif table and line.startswith('}'):
+            table = None
+        m = SOUNDS_LINE.match(line) if table else None
+        if not m:
+            out.append(line)
+            continue
+        indent, key, names, comment = m.groups()
+        moved = moved_by_kind['swing' if table == 'SWING_SOUNDS' else 'hit']
+        before = re.findall(r"'(\w+)'", names)
+        after = []
+        for name in before:
+            for new in moved.get(name, [name]):
+                if new not in after:
+                    after.append(new)
+        if after == before:
+            out.append(line)
+            continue
+        print(f'  {table}.{key}: {", ".join(before)} -> {", ".join(after) or "nothing"}')
+        code = f"{indent}{key} = {{ {', '.join(repr(n) for n in after)} }}," if after else f'{indent}{key} = {{}},'
+        out.append(code + (comment or ''))
+    return out
+
+
+def used_categories(lines):
+    """kind -> the category names the *_SOUNDS tables use"""
+    used, table = {'swing': set(), 'hit': set()}, None
+    for line in lines:
+        m = SOUNDS_TABLE.match(line)
+        if m:
+            table = m.group(1)
+        elif table and line.startswith('}'):
+            table = None
+        elif table:
+            used['swing' if table == 'SWING_SOUNDS' else 'hit'].update(re.findall(r"'(\w+)'", line))
+    return used
 
 
 def import_():
     lines = open(SCRIPT, encoding='utf-8').read().split('\n')
     before = list(lines)
+    moved_by_kind, sorted_by_kind = {}, {}
     for kind, (_, prefix, table) in KINDS.items():
         categories, seen = read_sorting(kind)
+        sorted_by_kind[kind] = categories
         for n, where in sorted(seen.items()):
             if len(where) > 1:
                 print(f'  {prefix.capitalize()}{n} is in {", ".join(where)}' +
                       (' - it will be in all of those' if UNUSED not in where else f' - and in {UNUSED}, which it ignores'))
         old = read_categories(lines, table)
+        moved = follow(old, categories)
+        renames = renamed(old, categories, moved)
+        moved_by_kind[kind] = moved
         for name in sorted(set(old) & set(categories)):
             added, removed = categories[name] - old[name], old[name] - categories[name]
             if added or removed:
                 print(f'  {table}.{name}:' + (f' + {sorted(added)}' if added else '') + (f' - {sorted(removed)}' if removed else ''))
-        lines = rewrite(lines, table, categories)
+        for name, into in sorted(moved.items()):
+            if name in renames.values():
+                new = next(n for n, o in renames.items() if o == name)
+                extra = categories[new] - old[name]
+                gone = old[name] - categories[new]
+                print(f'  {table}.{name} renamed {new}' + (f', + {sorted(extra)}' if extra else '') +
+                      (f', - {sorted(gone)}' if gone else ''))
+            elif into:
+                print(f'  {table}.{name}: its files went to {", ".join(into)}')
+            else:
+                print(f'  {table}.{name}: all its files are in {UNUSED}, gone')
+        lines = rewrite(lines, table, categories, renames)
+    lines = follow_references(lines, moved_by_kind)
+    used = used_categories(lines)
+    for kind, categories in sorted_by_kind.items():
+        for name in sorted(set(categories) - used[kind]):
+            print(f'  {name} ({kind}) is in no *_SOUNDS table, so nothing plays it yet')
+        for name in sorted(used[kind] - set(categories)):
+            print(f'  warning: a *_SOUNDS table uses {name} ({kind}), which has no folder')
     if lines == before:
         print('No changes')
         return

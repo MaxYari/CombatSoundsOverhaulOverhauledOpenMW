@@ -47,7 +47,7 @@ local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
 
 
 -- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them. A file can
--- be in more than one category, and one in none never plays: Swing6 (a near copy of Swing5), Hit68, Hit97, Hit98.
+-- be in more than one category, and one in none never plays (Swing6, a near copy of Swing5, is in none).
 -- tools/sound_sorting.py lays these out as folders of copies to sort by ear, and writes them back here.
 local SWING_CATEGORIES = {
     plain = { { 21, 23 } },                 -- generic, no metal: hand-to-hand, staves, spears' swings
@@ -59,21 +59,20 @@ local SWING_CATEGORIES = {
 -- Hit68, Hit97 and Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
     -- flesh
-    flesh = { { 1, 10 } },
-    punchyFlesh = { { 25, 29 } },
-    crunchyFlesh = { 72, 79 },                             -- punchy and crunchy, maybe maces on unarmored
-    fleshySlice = { { 61, 64 } },                          -- daggers and knives
-    fleshyStab = { { 65, 67 }, 70, { 73, 76 } },
+    Flesh = { { 1, 10 } },
+    metallicPunchyFlesh = { { 25, 29 } },
+    FleshySlice = { { 61, 64 } },
+    FleshyStab = { { 65, 67 }, 70, { 73, 76 } },
     -- bone
-    genericStab = { 77, 78 },
-    genericMetallic = { { 11, 17 } },
+    stabPure = { 77, 78 },
+    cutPure = { { 11, 17 } },
     -- armor
-    armor = { { 18, 21 }, { 30, 32 }, { 57, 60 } },
-    armorHeavy = { { 22, 24 }, { 33, 40 }, { 82, 95 }, { 99, 102 } }, -- maybe maces later; 82+ are HeavyWoodClubInto
-    armorHeavyBlade = { 96 },                              -- with a ring
-    armorFlesh = { { 41, 56 }, 71 },                       -- with a bloody layer
-    armorCrunchyFlesh = { 80, 81 },
-    armorStab = { 69 },                                    -- fleshy stab with a metal ring
+    armorHeavyPure = { 23, 24, { 33, 40 }, { 84, 95 }, { 99, 102 } },
+    armorMediumPure = { 42, 43, { 45, 56 }, 71 },
+    crunchyFleshWBluntRing = { 80, 81 },
+    BluntRingPure = { 69 },
+    RingingBladePure = { { 18, 21 }, 30 },
+    ringingMetalOnMetalPure = { 31, 32, { 57, 60 }, 96 },
 }
 
 -- Which categories answer an attack, by what it's made with: a weaponKind family with its hands (longBlade1), or
@@ -94,34 +93,33 @@ local SWING_SOUNDS = {
 }
 -- An unarmored spot, light armor, or a creature of flesh and blood. The fleshy stabs are only for thrusts.
 local FLESH_HIT_SOUNDS = {
-    shortBlade = { 'fleshySlice', 'flesh' },
-    shortBladeThrust = { 'fleshyStab', 'flesh' },
-    longBlade = { 'flesh' },
-    longBladeThrust = { 'fleshyStab', 'flesh' },
-    spearThrust = { 'fleshyStab' },
-    blunt = { 'crunchyFlesh', 'punchyFlesh' },
-    handToHand = { 'punchyFlesh', 'flesh', 'crunchyFlesh' },
-    default = { 'flesh', 'punchyFlesh' }, -- axes, staves, spears' swings, thrown weapons, arrows, creatures' own attacks
+    shortBlade = { 'FleshySlice', 'Flesh' },
+    shortBladeThrust = { 'FleshyStab', 'Flesh' },
+    longBlade = { 'Flesh' },
+    longBladeThrust = { 'FleshyStab', 'Flesh' },
+    spearThrust = { 'FleshyStab' },
+    blunt = { 'metallicPunchyFlesh' },
+    handToHand = { 'metallicPunchyFlesh', 'Flesh' },
+    default = { 'Flesh', 'metallicPunchyFlesh' }, -- axes, staves, spears' swings, thrown weapons, arrows, creatures' own attacks
 }
--- Medium and heavy armor: an armor hit only takes health once it's through, so only the armor hits with flesh or
--- crunch in them. The plain clanks (armor, armorHeavy) would sound like the blow was stopped. The stab is only for
--- thrusts, as on flesh.
+-- Medium and heavy armor, on top of the flesh sounds of the weapon (HIT_SOUNDS). The blunt ring is only for
+-- thrusts, as the fleshy stabs are on flesh.
 local FLESHY_ARMOR_HIT_SOUNDS = {
-    shortBladeThrust = { 'armorFlesh', 'armorStab' },
-    longBladeThrust = { 'armorFlesh', 'armorStab' },
-    spearThrust = { 'armorFlesh', 'armorStab' },
-    default = { 'armorFlesh', 'armorCrunchyFlesh' },
+    shortBladeThrust = { 'armorMediumPure', 'BluntRingPure' },
+    longBladeThrust = { 'armorMediumPure', 'BluntRingPure' },
+    spearThrust = { 'armorMediumPure', 'BluntRingPure' },
+    default = { 'armorMediumPure', 'crunchyFleshWBluntRing' },
 }
 -- Skeletons, liches, bonelords: the same for every weapon
 local BONE_HIT_SOUNDS = {
-    thrust = { 'genericStab' },
-    default = { 'genericMetallic' },
+    thrust = { 'stabPure' },
+    default = { 'cutPure' },
 }
 -- A creature of metal, which doesn't bleed
 local METAL_BODY_HIT_SOUNDS = {
-    shortBlade = { 'armorHeavy', 'armorHeavyBlade' },
-    longBlade = { 'armorHeavy', 'armorHeavyBlade' },
-    default = { 'armorHeavy' },
+    shortBlade = { 'armorHeavyPure', 'ringingMetalOnMetalPure' },
+    longBlade = { 'armorHeavyPure', 'ringingMetalOnMetalPure' },
+    default = { 'armorHeavyPure' },
 }
 -- What the hit lands on -> the tables above that answer it; an attack draws from what each of them gives it. Medium
 -- and heavy armor get the flesh sounds of the weapon as well as the armor ones. Ghosts have no sounds yet, so they
