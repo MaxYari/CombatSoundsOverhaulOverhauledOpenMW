@@ -141,7 +141,6 @@ local function armorRulesBroken()
     if #r.under == 1 and #r.main == 1 and not PURE_ARMOR[r.main[1].file] then return 'flesh under a hit that is not pure' end
     if #r.main == 1 and METALLIC[r.main[1].file] and #r.under > 0 then return 'flesh under a metallic punchy hit' end
     if #r.main == 1 and PURE_ARMOR[r.main[1].file] and #r.under == 0 then return 'a pure hit with no flesh under it' end
-    if #r.rings > 0 and #r.main == 0 then return 'a ring with no hit' end
     for _, ring in ipairs(r.rings) do if not RINGS[ring.file] then return 'a layer that is not a ring' end end
     return nil
 end
@@ -288,23 +287,25 @@ local pitchOk = true
 for _, p in ipairs(stub.filesPlayed) do pitchOk = pitchOk and p.options.pitch >= 0.9 and p.options.pitch <= 1.1 end
 check(pitchOk, 'hits play at a pitch between 0.9 and 1.1 too')
 local RINGING = expected('hit', { 'RingingBladePure' })
-local rings, withHit = 0, 0
+local rings, fleshOnlyRings, ringRuns = 0, 0, 3000
 broken = nil
-for _ = 1, 3000 do
+for _ = 1, ringRuns do
     armorHit('Medium Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
         weapon = W('LongBladeOneHand'), type = CHOP, sourceType = 'melee' })
     broken = broken or armorRulesBroken()
     local r = roles()
-    if #r.main == 1 then withHit, rings = withHit + 1, rings + #playedIn(RINGING) end
+    rings = rings + #playedIn(RINGING)
+    if #r.main == 0 and #r.rings > 0 then fleshOnlyRings = fleshOnlyRings + 1 end
 end
 check(broken == nil, 'a longsword on medium armor keeps to the rules' .. (broken and (': ' .. broken) or ''))
-check(rings / withHit > 0.25 and rings / withHit < 0.35,
-    string.format('and rings on top of 30%% of its hits (%.3f)', rings / withHit))
+check(rings / ringRuns > 0.21 and rings / ringRuns < 0.29 and fleshOnlyRings > 0,
+    string.format('and rings on top of 25%% of its hits, even when only the flesh plays (%.3f)', rings / ringRuns))
 armorHit('Light Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
     weapon = W('ShortBladeOneHand') })
-check(stub.stopped[1] == 'Light Armor Hit' and #stub.filesPlayed == 1
-    and inSet(expected('hit', { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' }), lastFile()),
-    'light armor is swapped for the flesh sounds of the weapon, alone')
+local lightHit = roles()
+check(stub.stopped[1] == 'Light Armor Hit' and #lightHit.main == 1 and #lightHit.under == 0
+    and inSet(expected('hit', { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' }), lightHit.main[1].file),
+    'light armor is swapped for the flesh sounds of the weapon, with no flesh under it')
 
 print('\n== hits on no armor ==')
 for _, hand in ipairs({ SWORD, false }) do
@@ -478,13 +479,17 @@ check(#stub.stopped == 0 and inSet(expected('hit', { 'armorHeavyBluntPureHit' })
 bodyHit(2, W('ShortBladeOneHand'))
 check(inSet(expected('hit', { 'armorHeavyBladePureHit' }), stub.filesPlayed[1].file), 'and a heavy blade hit for blades')
 local bone = bodyHit(1, W('BluntOneHand'))
-check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 'cutPure', 'BluntBoneHit', 'BoneHit' }), lastFile()),
+check(#stub.stopped == 0 and inSet(expected('hit', { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' }), stub.filesPlayed[1].file),
     'a skeleton (bone dust) gets a pure or bone hit over the body hit')
 pools('Health Damage', {
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'cutPure', 'BoneHit' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'stabPure', 'BoneHit' } },
     { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'stabPure', 'BoneHit' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'cutPure', 'BluntBoneHit', 'BoneHit' } },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
+    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
+    { label = 'warhammer', weapon = 'BluntTwoClose', attackType = THRUST, categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
+    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
+    { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
     { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'cutPure', 'BoneHit' } },
     { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'cutPure', 'BoneHit' } },
     { label = 'arrow', weapon = 'MarksmanBow', categories = { 'cutPure', 'BoneHit' } },
@@ -498,7 +503,7 @@ for _ = 1, 400 do
 end
 check(sameSet(rangedBone, expected('hit', { 'cutPure', 'BoneHit' })), 'but only a melee attack counts as a thrust')
 bodyHit(0, W('BluntOneHand'))
-check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), lastFile()), 'blood is flesh')
+check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), stub.filesPlayed[1].file), 'blood is flesh')
 -- An armored actor that doesn't bleed has no flesh under its armor, so the armor hit always plays
 stub.bloodType = 1
 local undead = loadScript(true)
@@ -541,13 +546,14 @@ for _, b in ipairs(bodies) do
     check(got == b[4], string.format('%s (blood type %d) is %s (%s)', b[2], b[1], b[4], tostring(got)))
 end
 stub.bloodType, stub.record = 1, { name = 'Ancestor Ghost', model = 'r\\ancestorghost.nif' }
-local ghost = bodyHit(1, W('BluntOneHand'))
-check(#stub.filesPlayed == 1 and ghost.interface.getBody() == 'Ghost' and inSet(expected('hit', { 'cutPure' }), lastFile()),
+local ghost = bodyHit(1, W('LongBladeOneHand'))
+check(ghost.interface.getBody() == 'Ghost' and inSet(expected('hit', { 'cutPure' }), stub.filesPlayed[1].file),
     'a ghost gets a pure cut over the body hit')
 pools('Health Damage', {
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'cutPure' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'stabPure' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'cutPure' } },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'BluntHitPure' } },
+    { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'BluntHitPure' } },
     { label = 'claws', attacker = creature, categories = { 'cutPure' } },
 }, ghost.interface)
 stub.record = {}
@@ -805,6 +811,33 @@ stub.enginePlays('Heavy Armor Hit')
 muted.engineHandlers.onUpdate(0.016)
 check(#stub.filesPlayed >= 1 and isHit(stub.filesPlayed[1].file), 'armor hits are still swapped')
 check(inSet(DEFAULT_FLESH, muted.interface.emit('Health Damage')), 'emit Health Damage still plays the layer')
+
+print('\n== rings on any hit ==')
+-- The rings of `runs` hits on each surface: how many, and which categories
+local function ringsOn(armor, weapon, attackType, runs)
+    local count, categories = 0, {}
+    for _ = 1, runs do
+        stub.reset()
+        api.playHit(armor, 1, weapon, attackType)
+        for _, i in ipairs(stub.infos) do
+            if i.layered and not i.underneath then count, categories[i.category] = count + 1, true end
+        end
+    end
+    return count / runs, categories
+end
+for _, armor in ipairs({ ARMOR.Unarmored, ARMOR.Light, ARMOR.Medium, ARMOR.Heavy, ARMOR.Metal, ARMOR.Bone, ARMOR.Ghost }) do
+    for _, c in ipairs({ { WEAPON.LongBlade, 'RingingBladePure', 'a longsword' }, { WEAPON.Blunt, 'BluntRingPure', 'a mace' } }) do
+        local rate, categories = ringsOn(armor, c[1], CHOP, 2000)
+        check(rate > 0.21 and rate < 0.29 and sameSet(categories, { [c[2]] = true }),
+            string.format('%s on %s rings with %s %.3f of the time', c[3], armor, c[2], rate))
+    end
+end
+for _, c in ipairs({ { WEAPON.LongBlade, THRUST, 'a longsword thrust' }, { WEAPON.Staff, nil, 'a staff' },
+    { WEAPON.HandToHand, nil, 'a fist' }, { WEAPON.Bow, nil, 'an arrow' }, { WEAPON.Spear, CHOP, 'a spear chop' },
+    { WEAPON.Natural, nil, 'claws' }, { nil, nil, 'nothing in particular' } }) do
+    local rate = ringsOn(ARMOR.Heavy, c[1], c[2], 300) + ringsOn(ARMOR.Unarmored, c[1], c[2], 300)
+    check(rate == 0, c[3] .. ' never rings')
+end
 
 print('\n== vanilla whooshes for fists ==')
 local fists = loadScript(true)

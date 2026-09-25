@@ -59,10 +59,11 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 - Medium and heavy armor: a pure armor impact for the weapon (heavy armor has one set for blades and one for blunt weapons), or a thrust's pure stab. Everything but fists and arrows can also draw a metallic punchy impact instead.
   - Under a pure impact, the wearer's flesh sound for the weapon always plays, at full volume. The pure impact itself plays three times out of four.
   - A metallic punchy impact already has flesh in it, so it plays alone.
-  - Blades ring on top three times out of ten, and so do blunt weapons with a blunt ring.
-- Dwemer machines: the pure heavy armor impacts, with the same rings on top, but no flesh.
-- Skeletons, liches and bonelords: pure cuts, or pure stabs for a thrust, with bone hits among them. Blunt weapons add blunt bone hits.
-- Ghosts, spectres and spirits: pure cuts, or pure stabs for a thrust. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+- Dwemer machines: the pure heavy armor impacts, but no flesh.
+- Skeletons, liches and bonelords: pure cuts, or pure stabs for a thrust, with bone hits among them. Blunt weapons and staves get pure blunt hits and blunt bone hits instead, whatever the attack.
+- Ghosts, spectres and spirits: pure cuts, or pure stabs for a thrust. Blunt weapons and staves get pure blunt hits. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+
+Whatever a hit lands on, a ring plays on top of it one time in four: a ringing blade for blades and axes, a blunt ring for maces and warhammers. On armor the ring comes whether the armor impact played or only the flesh under it. Thrusts, staves, fists, arrows, spears' swings and claws don't ring.
 
 When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The rings are the exception: they're separate layers with a chance of their own.
 

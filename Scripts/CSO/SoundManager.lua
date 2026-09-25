@@ -118,21 +118,17 @@ local FLESH_HIT_SOUNDS = {
 -- Medium and heavy armor: the pure armor hits, and metallicPunchyFleshHit for everything but arrows and fists. On a
 -- living actor the weapon's flesh sound plays under a pure hit; the metallic punchy one has flesh in it already.
 local MEDIUM_ARMOR_HIT_SOUNDS = {
-    shortBlade = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    longBlade = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    axe = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    blunt = { 'armorMediumPureHit', 'BluntRingPure', 'metallicPunchyFleshHit' },
     thrust = { 'armorMediumPureHit', 'stabPure', 'metallicPunchyFleshHit' },
     handToHand = { 'armorMediumPureHit' },
     bow = { 'armorMediumPureHit' },
     crossbow = { 'armorMediumPureHit' },
-    default = { 'armorMediumPureHit', 'metallicPunchyFleshHit' }, -- staves, spears' swings, thrown weapons, claws
+    default = { 'armorMediumPureHit', 'metallicPunchyFleshHit' }, -- blades, axes, blunt, staves, spears' swings, claws
 }
 local HEAVY_ARMOR_HIT_SOUNDS = {
-    shortBlade = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    longBlade = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    axe = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
-    blunt = { 'armorHeavyBluntPureHit', 'BluntRingPure', 'metallicPunchyFleshHit' },
+    shortBlade = { 'armorHeavyBladePureHit', 'metallicPunchyFleshHit' },
+    longBlade = { 'armorHeavyBladePureHit', 'metallicPunchyFleshHit' },
+    axe = { 'armorHeavyBladePureHit', 'metallicPunchyFleshHit' },
+    blunt = { 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' },
     staff = { 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' },
     handToHand = { 'armorHeavyBluntPureHit' },
     thrust = { 'armorHeavyBladePureHit', 'stabPure', 'metallicPunchyFleshHit' },
@@ -141,44 +137,60 @@ local HEAVY_ARMOR_HIT_SOUNDS = {
     crossbow = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
     default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' }, -- spears' swings, claws, thrown
 }
--- Skeletons, liches, bonelords: the pure cut and stab of anything with no flesh or armor, with the bone hits
+-- Skeletons, liches, bonelords: the pure cut, stab or blunt hit of anything with no flesh or armor, with the bone
+-- hits. Blunt weapons and staves hit blunt whatever the attack.
 local BONE_HIT_SOUNDS = {
-    blunt = { 'cutPure', 'BluntBoneHit', 'BoneHit' },
+    blunt = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
+    bluntThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
+    staff = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
+    staffThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
     thrust = { 'stabPure', 'BoneHit' },
     default = { 'cutPure', 'BoneHit' },
 }
--- Ghosts, spectres, spirits: no flesh or armor, so only the pure cut and stab
+-- Ghosts, spectres, spirits: no flesh or armor, so only the pure cut, stab or blunt hit
 local GHOST_HIT_SOUNDS = {
+    blunt = { 'BluntHitPure' },
+    bluntThrust = { 'BluntHitPure' },
+    staff = { 'BluntHitPure' },
+    staffThrust = { 'BluntHitPure' },
     thrust = { 'stabPure' },
     default = { 'cutPure' },
 }
 -- A creature of metal, which doesn't bleed
 local METAL_BODY_HIT_SOUNDS = {
-    shortBlade = { 'armorHeavyBladePureHit', 'RingingBladePure' },
-    longBlade = { 'armorHeavyBladePureHit', 'RingingBladePure' },
-    axe = { 'armorHeavyBladePureHit', 'RingingBladePure' },
-    blunt = { 'armorHeavyBluntPureHit', 'BluntRingPure' },
+    shortBlade = { 'armorHeavyBladePureHit' },
+    longBlade = { 'armorHeavyBladePureHit' },
+    axe = { 'armorHeavyBladePureHit' },
+    blunt = { 'armorHeavyBluntPureHit' },
     staff = { 'armorHeavyBluntPureHit' },
     handToHand = { 'armorHeavyBluntPureHit' },
     thrust = { 'armorHeavyBladePureHit' },
     bluntThrust = { 'armorHeavyBluntPureHit' },
     default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
 }
+-- The rings, on top of any hit a blade, axe or blunt weapon lands, whatever it lands on. A thrust doesn't ring.
+local RING_SOUNDS = {
+    shortBlade = { 'RingingBladePure' },
+    longBlade = { 'RingingBladePure' },
+    axe = { 'RingingBladePure' },
+    blunt = { 'BluntRingPure' },
+    thrust = {},
+}
 -- What the hit lands on -> the tables above that answer it; an attack draws from what each of them gives it
 local HIT_SOUNDS = {
-    light = { FLESH_HIT_SOUNDS },
-    medium = { MEDIUM_ARMOR_HIT_SOUNDS },
-    heavy = { HEAVY_ARMOR_HIT_SOUNDS },
-    flesh = { FLESH_HIT_SOUNDS },
-    metal = { METAL_BODY_HIT_SOUNDS },
-    bone = { BONE_HIT_SOUNDS },
-    ghost = { GHOST_HIT_SOUNDS },
+    light = { FLESH_HIT_SOUNDS, RING_SOUNDS },
+    medium = { MEDIUM_ARMOR_HIT_SOUNDS, RING_SOUNDS },
+    heavy = { HEAVY_ARMOR_HIT_SOUNDS, RING_SOUNDS },
+    flesh = { FLESH_HIT_SOUNDS, RING_SOUNDS },
+    metal = { METAL_BODY_HIT_SOUNDS, RING_SOUNDS },
+    bone = { BONE_HIT_SOUNDS, RING_SOUNDS },
+    ghost = { GHOST_HIT_SOUNDS, RING_SOUNDS },
 }
--- Hit categories that don't join the draw: where a *_SOUNDS table lists one, it plays on top of the hit drawn from
--- the others, this often
+-- Hit categories that don't join the draw: where a *_SOUNDS table lists one, it plays on top of the hit, this often
+-- per hit
 local HIT_LAYER_CHANCES = {
-    RingingBladePure = 0.3,
-    BluntRingPure = 0.3,
+    RingingBladePure = 0.25,
+    BluntRingPure = 0.25,
 }
 -- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
 -- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
@@ -630,9 +642,6 @@ local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
     local played = nil
     if not fleshUnder or math.random() < ARMOR_OVER_FLESH_CHANCE then
         played = play(file, 'hit', surface, attack, tag, via, volume, pitch)
-        for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
-            play(layer, 'hit', surface, attack, tag, via, volume, nil, 'layer')
-        end
     end
     if fleshUnder then
         local flesh = pickFrom('hit', { FLESH_HIT_SOUNDS }, weapon, nil, attackType)
@@ -641,6 +650,10 @@ local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
                 'underneath')
             played = played or under
         end
+    end
+    -- the layers go on top whether the armor hit played or only the flesh under it
+    for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
+        play(layer, 'hit', surface, attack, tag, via, volume, nil, 'layer')
     end
     return played
 end
