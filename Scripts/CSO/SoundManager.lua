@@ -50,11 +50,12 @@ local DUPLICATES = {
     ['sound/fx/item/csoswing/swing6.wav'] = true, -- Swing5 trimmed a little shorter
 }
 
--- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them.
+-- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them. A file can
+-- be in more than one category.
 local SWING_CATEGORIES = {
     plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, maybe staves
     sharpMetal = { { 1, 6 } },         -- short blades, daggers
-    metal = { { 11, 16 } },            -- generic: swords, staves
+    metal = { { 10, 16 } },            -- generic: swords, staves. Swing10 is heavy metal too
     ringingBlade = { { 24, 26 } },     -- one-handed long blades: like metal, but sharper and with a ring
     heavyMetal = { { 7, 10 } },        -- maces, axes, probably two-handed swords
     heavyMetalGeneric = { { 17, 20 } }, -- staves, polearms, spears, maybe two-handed maces, axes and swords
@@ -282,14 +283,21 @@ local function getFiles()
     return files
 end
 
--- Every file of the given categories, merged once per list of categories
+-- Every file of the given categories, merged once per list of categories. A file in two of them is still in
+-- the draw once.
 local pools = {}
 local function pool(folder, categories)
     local list = pools[categories]
     if not list then
         list = {}
+        local added = {}
         for _, category in ipairs(categories) do
-            for _, path in ipairs(getFiles()[folder][category] or {}) do list[#list + 1] = path end
+            for _, path in ipairs(getFiles()[folder][category] or {}) do
+                if not added[path] then
+                    added[path] = true
+                    list[#list + 1] = path
+                end
+            end
         end
         pools[categories] = list
     end

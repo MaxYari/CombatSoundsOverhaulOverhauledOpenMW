@@ -51,7 +51,7 @@ local onUpdate = script.engineHandlers.onUpdate
 -- The categories as they were sorted by ear, written out again so the script's tables are checked against them.
 local function range(a, b) local t = {} for n = a, b do t[#t + 1] = n end return t end
 local SWINGS = {
-    plain = range(21, 23), sharpMetal = range(1, 6), metal = range(11, 16), ringingBlade = range(24, 26),
+    plain = range(21, 23), sharpMetal = range(1, 6), metal = range(10, 16), ringingBlade = range(24, 26),
     heavyMetal = range(7, 10), heavyMetalGeneric = range(17, 20),
 }
 local HITS = {
@@ -293,6 +293,14 @@ pools('Weapon Swish', {
     { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
+local tally, n = {}, 0
+for _ = 1, 28000 do
+    local f = api.pickFile('Weapon Swish', { weapon = W('LongBladeTwoHand') })
+    tally[f] = (tally[f] or 0) + 1
+    n = n + 1
+end
+local swing10 = (tally['sound/fx/item/csoswing/swing10.wav'] or 0) / n
+check(swing10 > 0.05 and swing10 < 0.095, string.format('Swing10, in both heavyMetal and metal, is drawn as often as the rest (%.3f, 1/14 = 0.071)', swing10))
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
 local fleshCases = {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'fleshySlice', 'flesh' } },
