@@ -30,6 +30,8 @@ KINDS = {  # sorting/ folder -> (CSO folder, file prefix, Lua table)
     'swing': ('CSOSwing', 'swing', 'SWING_CATEGORIES'),
     'hit': ('CSOHit', 'hit', 'HIT_CATEGORIES'),
 }
+# Categories the script fills from elsewhere, e.g. the vanilla swing sounds, so they have no folder
+BUILTIN = {'swing': {'vanilla'}, 'hit': set()}
 SOUND = re.compile(r'^(swing|hit)(\d+)\.(wav|mp3|ogg|flac)$', re.I)
 CATEGORY_LINE = re.compile(r'^(\s*)([A-Za-z_]\w*) = \{(.*)\},(\s*)(--.*)?$')
 
@@ -296,7 +298,7 @@ def import_():
     for kind, categories in sorted_by_kind.items():
         for name in sorted(set(categories) - used[kind]):
             print(f'  {name} ({kind}) is in no *_SOUNDS table, so nothing plays it yet')
-        for name in sorted(used[kind] - set(categories)):
+        for name in sorted(used[kind] - set(categories) - BUILTIN[kind]):
             print(f'  warning: a *_SOUNDS table uses {name} ({kind}), which has no folder')
     if lines == before:
         print('No changes')

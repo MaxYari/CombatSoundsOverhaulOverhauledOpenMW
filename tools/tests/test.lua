@@ -32,7 +32,8 @@ end
 
 local realRequire = require
 -- Loads the script fresh, with the unarmored layer switched on or off whatever it ships with. The actor's body is
--- read from stub.bloodType the first time it's needed.
+-- read from stub.bloodType the first time it's needed. What each sound played was is kept in stub.infos, by a play
+-- handler older than any a test adds.
 local function loadScript(layer)
     local f = assert(io.open(SCRIPT))
     local src, n = f:read('a'):gsub('local LAYER_UNARMORED_HITS = %a+', 'local LAYER_UNARMORED_HITS = ' .. tostring(layer))
@@ -42,6 +43,7 @@ local function loadScript(layer)
     _G.require = function(name) return stub.packages[name] or realRequire(name) end
     local loaded = assert((loadstring or load)(src, '@' .. SCRIPT))()
     _G.require = realRequire
+    loaded.interface.addOnPlayHandler(function(info) stub.infos[#stub.infos + 1] = info end)
     return loaded
 end
 local script = loadScript(true)
@@ -71,11 +73,14 @@ local function uncategorized(categories, last)
     for n = 1, last do if not inOne[n] then out[#out + 1] = n end end
     return out
 end
--- The set of paths a list of categories should draw from
+-- The set of paths a list of categories should draw from. vanilla is the vanilla swing sounds' files.
 local function expected(folder, categories)
     local set = {}
     for _, category in ipairs(categories) do
-        for _, n in ipairs(assert((folder == 'swing' and SWINGS or HITS)[category], category)) do
+        if category == 'vanilla' then
+            for _, record in pairs(stub.soundRecords) do set[record.fileName] = true end
+        end
+        for _, n in ipairs(category == 'vanilla' and {} or assert((folder == 'swing' and SWINGS or HITS)[category], category)) do
             set[string.format('sound/fx/item/cso%s/%s%d.wav', folder, folder, n)] = true
         end
     end
@@ -118,26 +123,26 @@ end
 local RINGS = expected('hit', { 'RingingBladePure', 'BluntRingPure' })
 local METALLIC = expected('hit', { 'metallicPunchyFleshHit' })
 local PURE_ARMOR = expected('hit', { 'armorMediumPureHit', 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit', 'stabPure' })
--- What the last hit played, by role: the flesh under armor (at 60% of `volume`), the rings, and the hit drawn
-local function roles(volume)
-    volume = volume or 1
+-- What the last hit played, by role, as the play handlers heard it: the flesh under armor, the rings, and the hit drawn
+local function roles()
     local r = { under = {}, rings = {}, main = {} }
-    for _, p in ipairs(stub.filesPlayed) do
-        if math.abs(p.options.volume - volume * 0.6) < 1e-9 then r.under[#r.under + 1] = p
-        elseif RINGS[p.file] then r.rings[#r.rings + 1] = p
-        else r.main[#r.main + 1] = p end
+    for _, info in ipairs(stub.infos) do
+        if info.underneath then r.under[#r.under + 1] = info
+        elseif info.layered then r.rings[#r.rings + 1] = info
+        else r.main[#r.main + 1] = info end
     end
     return r
 end
 -- The rules for a hit on armor over a living body; returns what went wrong, or nil
-local function armorRulesBroken(volume)
-    local r = roles(volume)
+local function armorRulesBroken()
+    local r = roles()
     if #r.main > 1 or #r.under > 1 then return 'more than one hit or flesh' end
     if #r.main + #r.under == 0 then return 'nothing played' end
     if #r.under == 1 and #r.main == 1 and not PURE_ARMOR[r.main[1].file] then return 'flesh under a hit that is not pure' end
     if #r.main == 1 and METALLIC[r.main[1].file] and #r.under > 0 then return 'flesh under a metallic punchy hit' end
     if #r.main == 1 and PURE_ARMOR[r.main[1].file] and #r.under == 0 then return 'a pure hit with no flesh under it' end
     if #r.rings > 0 and #r.main == 0 then return 'a ring with no hit' end
+    for _, ring in ipairs(r.rings) do if not RINGS[ring.file] then return 'a layer that is not a ring' end end
     return nil
 end
 local function union(...)
@@ -199,8 +204,8 @@ stub.rightHand = nil
 stub.windUp('chop')
 stub.enginePlays('Weapon Swish')
 stub.release('chop')
-check(#stub.filesPlayed == 1 and inSet(expected('swing', { 'plain' }), lastFile()),
-    'a hand-to-hand swing gets a plain whoosh')
+check(#stub.filesPlayed == 1 and inSet(expected('swing', { 'plain', 'vanilla' }), lastFile()),
+    'a hand-to-hand swing gets a plain whoosh or a vanilla one')
 stub.reset()
 stub.selfObject.isCreature = true
 stub.windUp('chop')
@@ -354,8 +359,8 @@ pools('Weapon Swish', {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBladeMetal' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
     { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'bladeMetal' }, folder = 'swing' },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal' }, folder = 'swing' },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
+    { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'spear', weapon = 'SpearTwoWide', categories = { 'plain' }, folder = 'swing' },
@@ -364,7 +369,7 @@ pools('Weapon Swish', {
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
     { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
-    { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
+    { label = 'fists', attacker = npc, categories = { 'plain', 'vanilla' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
 local SPEAR_THRUST_SWINGS = expected('swing', { 'bladeMetal', 'ringingBladeMetal' })
@@ -386,9 +391,9 @@ check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapo
 local fleshCases = {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' } },
     { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit' } },
     { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' } },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'metallicPunchyFleshHit' } },
     { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'metallicPunchyFleshHit' } },
@@ -557,7 +562,7 @@ check(inSet(union(HEAVY_HIT, DEFAULT_FLESH), api.emit('Heavy Armor Hit')) and #p
     'emit plays what a hit on armor would: the flesh under it, and 75% of the time the armor hit')
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
-check(inSet(expected('swing', { 'plain' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
+check(inSet(expected('swing', { 'plain', 'vanilla' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
 check(inSet(expected('swing', { 'sharpMetal', 'ringingBladeMetal' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
     'options.weapon picks for that weapon')
 stub.selfObject.isCreature = true
@@ -619,6 +624,7 @@ local function hitBy(hit, armorTag)
         onUpdate(0.016)
     end)
 end
+local line
 local swingNames = {
     { 'ShortBladeOneHand', 'shortBlade 1h' }, { 'LongBladeOneHand', 'longBlade 1h' },
     { 'LongBladeTwoHand', 'longBlade 2h' }, { 'BluntOneHand', 'blunt 1h' }, { 'BluntTwoClose', 'blunt 2h' },
@@ -629,8 +635,9 @@ for _, s in ipairs(swingNames) do
     local line = swingWith(W(s[1]))
     check(line:find('(release, ' .. s[2] .. ', ', 1, true) ~= nil, s[1] .. ' swings as ' .. s[2])
 end
-check(swingWith(nil):find('(release, handToHand, plain, pitch ', 1, true) ~= nil, 'no weapon swings as handToHand')
-local line
+line = swingWith(nil)
+check(line:find('(release, handToHand, plain, pitch ', 1, true) ~= nil or line:find('(release, handToHand, vanilla, pitch ', 1, true) ~= nil,
+    'no weapon swings as handToHand')
 for _ = 1, 50 do
     line = hitBy({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand') }, 'Heavy Armor Hit')
     if line:find(', underneath, pitch ', 1, true) then break end
@@ -709,9 +716,10 @@ stub.reset()
 script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9, attackType = THRUST })
 script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
 local swingPlayed = table.remove(stub.filesPlayed, 1)
-local eventHit = roles(0.4)
+table.remove(stub.infos, 1)
+local eventHit = roles()
 check(inSet(expected('swing', { 'bladeMetal', 'ringingBladeMetal' }), swingPlayed.file) and swingPlayed.options.volume == 0.9
-    and armorRulesBroken(0.4) == nil and (#eventHit.main == 0
+    and armorRulesBroken() == nil and (#eventHit.main == 0
         or inSet(expected('hit', { 'armorHeavyBladePureHit', 'stabPure', 'metallicPunchyFleshHit' }), eventHit.main[1].file)),
     'the PlaySwing and PlayHit events do the same')
 
@@ -749,8 +757,8 @@ end
 check(main and main.kind == 'hit' and main.tag == 'Heavy Armor Hit' and main.weapon == 'AxeTwoHanded' and main.armor == 'Heavy'
     and main.attackType == CHOP and main.via == 'hit' and main.category == 'armorHeavyBladePureHit',
     'and about a hit, with the weapon, armor, attack type and category')
-check(under and under.layered and under.volume == 0.6 and (under.category == 'FleshHit' or under.category == 'metallicPunchyFleshHit'),
-    'and about the flesh under it')
+check(under and under.layered and under.volume == 1 and (under.category == 'FleshHit' or under.category == 'metallicPunchyFleshHit'),
+    'and about the flesh under it, at full volume')
 seen = {}
 stub.reset()
 stub.hit({ successful = true, damage = { health = 5 }, attacker = npc })
@@ -797,6 +805,121 @@ stub.enginePlays('Heavy Armor Hit')
 muted.engineHandlers.onUpdate(0.016)
 check(#stub.filesPlayed >= 1 and isHit(stub.filesPlayed[1].file), 'armor hits are still swapped')
 check(inSet(DEFAULT_FLESH, muted.interface.emit('Health Damage')), 'emit Health Damage still plays the layer')
+
+print('\n== vanilla whooshes for fists ==')
+local fists = loadScript(true)
+local vanillaDraws, fistDraws = 0, 6000
+for _ = 1, fistDraws do
+    if inSet(expected('swing', { 'vanilla' }), fists.interface.pickFile('Weapon Swish', { attacker = npc })) then
+        vanillaDraws = vanillaDraws + 1
+    end
+end
+-- Weapon Swish and SwishM share swoosh 1, so there are three vanilla files to CSO's three plain ones
+check(vanillaDraws / fistDraws > 0.45 and vanillaDraws / fistDraws < 0.55,
+    string.format('a vanilla file is as likely as a plain one, each counted once (%.3f)', vanillaDraws / fistDraws))
+stub.reset()
+stub.rightHand = nil
+repeat
+    stub.reset()
+    fists.interface.emit('Weapon Swish')
+until inSet(expected('swing', { 'vanilla' }), lastFile())
+check(stub.infos[1].category == 'vanilla', "a vanilla whoosh's category is vanilla")
+
+print('\n== weapon kinds set by other mods ==')
+local kinds = loadScript(true)
+local k = kinds.interface
+local katar = stub.weapon('MY_Katar_01', 'ShortBladeOneHand')
+k.setWeaponKind('my_katar_01', k.WEAPON.Blunt)
+check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'heavyMetal', 'plain' }))
+    and sameSet(draws('Health Damage', { weapon = katar }, k), expected('hit', { 'metallicPunchyFleshHit' })),
+    'setWeaponKind makes a short blade swing and hit as Blunt, whatever the case of its id')
+check(sameSet(draws('Weapon Swish', { weapon = stub.weapon('other_dagger', 'ShortBladeOneHand') }, k),
+    expected('swing', { 'sharpMetal', 'ringingBladeMetal' })), 'other weapons of its type are left alone')
+stub.reset()
+stub.rightHand = katar
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+check(stub.infos[1] and stub.infos[1].weapon == 'Blunt' and stub.infos[1].weaponId == 'MY_Katar_01',
+    "a swing tells the handlers the kind it was given and the weapon's record id")
+stub.reset()
+stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = katar })
+stub.enginePlays('Health Damage')
+kinds.engineHandlers.onUpdate(0.016)
+check(stub.infos[1] and stub.infos[1].weapon == 'Blunt' and stub.infos[1].weaponId == 'MY_Katar_01', 'so does a hit made with it')
+stub.reset()
+stub.hit({ successful = true, damage = { health = 5 }, attacker = npc })
+stub.enginePlays('Health Damage')
+kinds.engineHandlers.onUpdate(0.016)
+k.playSwing(k.WEAPON.HandToHand)
+check(#stub.infos == 2 and stub.infos[1].weaponId == nil and stub.infos[2].weaponId == nil,
+    'a punch and playSwing have no weaponId')
+k.setWeaponKind('MY_KATAR_01', nil)
+check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'sharpMetal', 'ringingBladeMetal' })),
+    'setWeaponKind with nil goes back to its record')
+kinds.eventHandlers.CombatSoundsOverhaul_SetWeaponKind({ recordId = 'my_katar_01', weapon = k.WEAPON.Spear })
+check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'plain' })), 'so does the SetWeaponKind event')
+check(not pcall(k.setWeaponKind, 'my_katar_01', 'Knuckles') and not pcall(k.setWeaponKind, nil, k.WEAPON.Blunt),
+    'an unknown kind or a missing record id is an error')
+check(sameSet(draws('Weapon Swish', { weapon = katar }), expected('swing', { 'sharpMetal', 'ringingBladeMetal' })),
+    'and it is kept per actor: the main copy never heard of it')
+
+print('\n== volume settings ==')
+stub.isPlayer = true
+stub.sections = {}
+local nearbyActor = stub.eventTaker('nearby_npc')
+stub.nearby.actors = { stub.selfObject, nearbyActor }
+local player = loadScript(true)
+local group = stub.settingsGroups.SettingsCombatSoundsOverhaul
+local volumeSection = stub.sections.SettingsCombatSoundsOverhaul
+check(stub.settingsPages.CombatSoundsOverhaul and group and group.page == 'CombatSoundsOverhaul' and group.permanentStorage,
+    "the player's copy registers the settings page and its group")
+check(volumeSection:get('hitVolume') == 1 and volumeSection:get('swingVolume') == 1, 'hit and swing volume start at 1')
+volumeSection:set('hitVolume', 0.5)
+local sent = nearbyActor.events[#nearbyActor.events]
+check(sent and sent.name == 'CombatSoundsOverhaul_Volumes' and sent.data.hit == 0.5 and sent.data.swing == 1,
+    'a change goes to the actors nearby, not to the player itself')
+stub.reset()
+player.interface.playHit(player.interface.ARMOR.Light, 0.8)
+check(math.abs(stub.filesPlayed[1].options.volume - 0.4) < 1e-9 and stub.infos[1].volume == 0.8,
+    'Hit Volume applies after the handlers, which see the volume before it')
+volumeSection:set('swingVolume', 0.25)
+stub.reset()
+player.interface.playSwing(player.interface.WEAPON.Axe)
+check(stub.filesPlayed[1].options.volume == 0.25, 'Swing Volume applies to swings')
+stub.reset()
+player.interface.emit('Heavy Armor Hit')
+local allHalf = #stub.filesPlayed > 0
+for _, p in ipairs(stub.filesPlayed) do allHalf = allHalf and math.abs(p.options.volume - 0.5) < 1e-9 end
+check(allHalf, 'and Hit Volume to every sound of a hit: the flesh under it and the rings too')
+local asker = stub.eventTaker('asking_npc')
+player.eventHandlers.CombatSoundsOverhaul_WhatVolumes(asker)
+check(asker.events[1] and asker.events[1].name == 'CombatSoundsOverhaul_Volumes' and asker.events[1].data.hit == 0.5
+    and asker.events[1].data.swing == 0.25, 'the player answers an actor that asks')
+player.eventHandlers.CombatSoundsOverhaul_Volumes({ hit = 0.1, swing = 0.1 })
+stub.reset()
+player.interface.playSwing(player.interface.WEAPON.Axe)
+check(stub.filesPlayed[1].options.volume == 0.25, 'and keeps its own settings over what others send')
+stub.isPlayer = false
+local playerActor = stub.eventTaker('player')
+stub.nearby.players = { playerActor }
+local other = loadScript(true)
+other.engineHandlers.onActive()
+check(playerActor.events[1] and playerActor.events[1].name == 'CombatSoundsOverhaul_WhatVolumes'
+    and playerActor.events[1].data == stub.selfObject, 'an actor asks the player for the volumes as it becomes active')
+stub.reset()
+other.interface.playSwing(other.interface.WEAPON.Axe)
+check(stub.filesPlayed[1].options.volume == 1, 'and plays at full volume until it hears back')
+other.eventHandlers.CombatSoundsOverhaul_Volumes(asker.events[1].data)
+stub.reset()
+other.interface.playSwing(other.interface.WEAPON.Axe)
+other.interface.playHit(other.interface.ARMOR.Light)
+check(stub.filesPlayed[1].options.volume == 0.25 and stub.filesPlayed[2].options.volume == 0.5, 'then with the settings')
+local notAPlayer = stub.eventTaker('someone')
+other.eventHandlers.CombatSoundsOverhaul_WhatVolumes(notAPlayer)
+check(#notAPlayer.events == 0 and stub.settingsGroups.SettingsCombatSoundsOverhaul == group,
+    'only the player answers, and only the player registers settings')
+stub.nearby.players, stub.nearby.actors, stub.sections = {}, {}, {}
 
 print(string.format('\n%d checks, %d failures', checks, failures))
 os.exit(failures == 0 and 0 or 1)

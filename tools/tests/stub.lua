@@ -4,6 +4,7 @@ local M = {}
 M.simulationTime = 100.0
 M.playing = {}     -- lowercase sound id -> true, the vanilla sounds playing on the actor
 M.filesPlayed = {} -- { file = ..., options = ... } per playSoundFile3d
+M.infos = {}       -- the play handler info of each sound played, for scripts loaded by test.lua
 M.stopped = {}     -- sound ids passed to stopSound3d
 M.rightHand = nil  -- whatever the actor holds in its right hand
 M.vfsPaths = {}    -- normalized VFS paths the vfs stub lists
@@ -25,7 +26,7 @@ end
 function M.enginePlays(tag) M.playing[tag:lower()] = true end
 
 function M.reset()
-    M.playing, M.filesPlayed, M.stopped = {}, {}, {}
+    M.playing, M.filesPlayed, M.stopped, M.infos = {}, {}, {}, {}
 end
 
 -- The engine's own attack animation calls, as CharacterController::updateWeaponState makes them.
@@ -72,6 +73,39 @@ function M.item(recordId) return { recordId = recordId } end
 function M.npc() return { recordId = 'test_npc' } end
 function M.creature() return { recordId = 'test_creature', isCreature = true } end
 
+-- An actor that keeps the events sent to it: { name = ..., data = ... }
+function M.eventTaker(recordId)
+    local actor = { recordId = recordId, events = {} }
+    function actor:sendEvent(name, data) self.events[#self.events + 1] = { name = name, data = data } end
+    return actor
+end
+M.nearby = { players = {}, actors = {} }
+
+-- The vanilla swing sounds, as in Morrowind.esm
+M.soundRecords = {
+    ['weapon swish'] = { fileName = 'sound/fx/swoosh 1.wav' },
+    swishs = { fileName = 'sound/fx/swoosh 2.wav' },
+    swishm = { fileName = 'sound/fx/swoosh 1.wav' },
+    swishl = { fileName = 'sound/fx/swoosh 3.wav' },
+}
+
+-- storage.playerSection: get, set and subscribe, with set calling the subscribers as the engine does
+M.sections = {}
+local function section(key)
+    if not M.sections[key] then
+        local s = { values = {}, subscribers = {} }
+        function s:get(k) return self.values[k] end
+        function s:set(k, v)
+            self.values[k] = v
+            for _, fn in ipairs(self.subscribers) do fn(key, k) end
+        end
+        function s:subscribe(fn) self.subscribers[#self.subscribers + 1] = fn end
+        M.sections[key] = s
+    end
+    return M.sections[key]
+end
+M.settingsPages, M.settingsGroups = {}, {}
+
 M.packages = {
     ['openmw.core'] = {
         getSimulationTime = function() return M.simulationTime end,
@@ -89,6 +123,7 @@ M.packages = {
                 assert(obj ~= nil, 'playSoundFile3d needs an object')
                 M.filesPlayed[#M.filesPlayed + 1] = { file = file, options = options }
             end,
+            records = setmetatable({}, { __index = function(_, id) return M.soundRecords[id] end }),
         },
     },
     ['openmw.self'] = setmetatable({ object = selfObject }, { __index = selfObject }),
@@ -121,6 +156,9 @@ M.packages = {
             end
         end,
     },
+    ['openmw.async'] = { callback = function(_, fn) return fn end },
+    ['openmw.nearby'] = M.nearby,
+    ['openmw.storage'] = { playerSection = section },
     ['openmw.util'] = {
         makeStrictReadOnly = function(t)
             return setmetatable({}, {
@@ -151,6 +189,18 @@ M.packages = {
                 groupname = groupname or ''
                 M.textKeyHandlers[groupname] = M.textKeyHandlers[groupname] or {}
                 table.insert(M.textKeyHandlers[groupname], fn)
+            end,
+        },
+        -- as in scripts/omw/settings: a setting starts at its default
+        Settings = {
+            registerPage = function(options) M.settingsPages[options.key] = options end,
+            registerGroup = function(options)
+                M.settingsGroups[options.key] = options
+                for _, setting in ipairs(options.settings) do
+                    if section(options.key):get(setting.key) == nil then
+                        section(options.key):set(setting.key, setting.default)
+                    end
+                end
             end,
         },
         Combat = {

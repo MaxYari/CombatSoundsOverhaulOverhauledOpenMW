@@ -30,6 +30,9 @@ local self = require('openmw.self')
 local types = require('openmw.types')
 local vfs = require('openmw.vfs')
 local util = require('openmw.util')
+local async = require('openmw.async')
+local nearby = require('openmw.nearby')
+local storage = require('openmw.storage')
 local auxUtil = require('openmw_aux.util')
 local I = require('openmw.interfaces')
 
@@ -84,21 +87,25 @@ local SWING_SOUNDS = {
     shortBlade = { 'sharpMetal', 'ringingBladeMetal' },
     longBlade1 = { 'ringingBladeMetal', 'bladeMetal' },
     longBlade2 = { 'bladeMetal' },
-    blunt = { 'heavyMetal' },
+    blunt = { 'heavyMetal', 'plain' }, -- maces and warhammers
     axe = { 'heavyMetal' },
     spear = { 'plain' },
     spearThrust = { 'bladeMetal', 'ringingBladeMetal' },
     staff = { 'plain', 'bladeMetal' },
     thrown = { 'sharpMetal', 'plain' },
-    handToHand = { 'plain' },
+    handToHand = { 'plain', 'vanilla' },
+}
+-- Categories that aren't CSO files. vanilla is what the vanilla swing sounds play, read from their records, so a mod
+-- that replaces those files is heard here too.
+local BUILTIN_CATEGORIES = {
+    swing = { vanilla = { 'weapon swish', 'swishs', 'swishm', 'swishl' } },
 }
 -- An unarmored spot, light armor, a creature of flesh and blood, and the flesh under medium and heavy armor. The
 -- flesh stabs are only for thrusts, and metallicPunchyFleshHit is for everything but arrows and fists.
 local FLESH_HIT_SOUNDS = {
     shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' },
     shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
-    longBlade = { 'FleshHit', 'metallicPunchyFleshHit' },
-    longBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    longBlade = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit' }, -- cuts and thrusts alike
     spearThrust = { 'FleshStab', 'metallicPunchyFleshHit' },
     blunt = { 'metallicPunchyFleshHit' },
     thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
@@ -175,7 +182,7 @@ local HIT_LAYER_CHANCES = {
 -- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
 -- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
 local FLESH_UNDER = { medium = true, heavy = true }
-local FLESH_UNDER_VOLUME = 0.6
+local FLESH_UNDER_VOLUME = 1
 local ARMOR_OVER_FLESH_CHANCE = 0.75
 local SWING_TABLES = { SWING_SOUNDS }
 -- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the CSO layer starts with it and
@@ -330,6 +337,19 @@ local function getFiles()
             byCategory[category] = list
         end
         table.sort(all)
+        for category, soundIds in pairs(BUILTIN_CATEGORIES[folder] or {}) do
+            local list, added = {}, {}
+            for _, id in ipairs(soundIds) do
+                local record = sound.records[id]
+                local path = record and record.fileName
+                if path and not added[path] then
+                    added[path] = true
+                    list[#list + 1] = path
+                    categoryOf[path] = categoryOf[path] or category
+                end
+            end
+            byCategory[category] = list
+        end
         files[folder] = byCategory
     end
     return files
@@ -361,17 +381,29 @@ local function endsWith(s, suffix)
     return s:sub(-#suffix) == suffix
 end
 
+-- lowercased record id -> weaponKind, from setWeaponKind: another mod saying what a weapon is to CSO
+local kindOverrides = {}
+
 -- What an attack is made with: the weapon's kind, or bare hands, or a creature's own attack. nil without either.
 local function weaponKind(item, actor)
     if item then
+        local override = kindOverrides[string.lower(item.recordId)]
+        if override then return override end
         return Weapon.objectIsInstance(item) and WEAPON_KINDS[Weapon.record(item).type] or OTHER
     end
     if not actor then return nil end
     return types.Creature.objectIsInstance(actor) and NATURAL or HAND_TO_HAND
 end
 
-local function swingingWith()
-    return weaponKind(getEquipment(self, RIGHT_HAND), self)
+-- An attack as the picking and the play handlers take it: what it's made with (weaponKind), that weapon's record id
+-- when there is one, and chop, slash or thrust
+local function attackWith(item, actor, attackType)
+    return { weapon = weaponKind(item, actor), weaponId = item and item.recordId, attackType = attackType }
+end
+
+-- The attack this actor swings, with its right hand
+local function swinging(attackType)
+    return attackWith(getEquipment(self, RIGHT_HAND), self, attackType)
 end
 
 local body = nil
@@ -501,18 +533,71 @@ end
 -- Handlers other scripts on this actor add to hear about a CSO sound before it plays, newest first
 local playHandlers = {}
 
+-- The overall volumes from the settings page. Settings live in the player's storage, which only the player's script
+-- can read, so the player's copy of this script hands them to everyone else's: to an actor that asks as it becomes
+-- active, and to all nearby ones when they change.
+local SETTINGS_PAGE, SETTINGS_GROUP = 'CombatSoundsOverhaul', 'SettingsCombatSoundsOverhaul'
+local volumes = { hit = 1, swing = 1 }
+if isPlayer then
+    I.Settings.registerPage {
+        key = SETTINGS_PAGE,
+        l10n = 'CombatSoundsOverhaul',
+        name = 'Combat Sounds Overhaul',
+        description = 'Event driven Combat Sounds Overhaul.',
+    }
+    I.Settings.registerGroup {
+        key = SETTINGS_GROUP,
+        page = SETTINGS_PAGE,
+        l10n = 'CombatSoundsOverhaul',
+        name = 'Volume',
+        permanentStorage = true,
+        settings = {
+            {
+                key = 'hitVolume',
+                renderer = 'number',
+                default = 1,
+                argument = { min = 0, max = 1 },
+                name = 'Hit Volume',
+                description = 'From 0 to 1. Every CSO hit sound, including the layers and the flesh under armor hits.',
+            },
+            {
+                key = 'swingVolume',
+                renderer = 'number',
+                default = 1,
+                argument = { min = 0, max = 1 },
+                name = 'Swing Volume',
+                description = 'From 0 to 1. Every CSO whoosh.',
+            },
+        },
+    }
+    local section = storage.playerSection(SETTINGS_GROUP)
+    local function readVolumes()
+        volumes.hit = section:get('hitVolume') or 1
+        volumes.swing = section:get('swingVolume') or 1
+    end
+    readVolumes()
+    section:subscribe(async:callback(function()
+        readVolumes()
+        for _, actor in ipairs(nearby.actors) do
+            if actor ~= self.object then actor:sendEvent('CombatSoundsOverhaul_Volumes', volumes) end
+        end
+    end))
+end
+
 -- Every CSO sound goes through here: the handlers see it first, may change its file, volume and pitch, and one
 -- returning false stops it. Returns the file played, or nil.
-local function play(file, kind, surface, weapon, tag, via, volume, pitch, attackType, role)
+local function play(file, kind, surface, attack, tag, via, volume, pitch, role)
+    attack = attack or {}
     local info = {
         file = file,
         volume = volume or 1,
         pitch = pitch or (PITCH_MIN + math.random() * (PITCH_MAX - PITCH_MIN)),
         kind = kind,
         tag = tag,
-        weapon = weapon and NAME_OF_WEAPON[weapon],
+        weapon = attack.weapon and NAME_OF_WEAPON[attack.weapon],
+        weaponId = attack.weaponId,
         armor = surface and NAME_OF_SURFACE[surface],
-        attackType = attackType,
+        attackType = attack.attackType,
         category = categoryOf[file],
         layered = role ~= nil or (tag ~= nil and TAGS[tag:lower()] == 'body'),
         underneath = role == 'underneath',
@@ -521,12 +606,14 @@ local function play(file, kind, surface, weapon, tag, via, volume, pitch, attack
     local stopped = auxUtil.callEventHandlers(playHandlers, info)
     if debugLog then
         print(string.format('[Combat Sounds Overhaul] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
-            tostring(info.file), describe(via, weapon, surface, attackType) .. ', ' .. tostring(info.category)
+            tostring(info.file), describe(via, attack.weapon, surface, attack.attackType) .. ', ' .. tostring(info.category)
                 .. (role and (', ' .. role) or ''), info.pitch,
             stopped and ' - stopped by a handler' or ''))
     end
     if stopped or not info.file then return nil end
-    sound.playSoundFile3d(info.file, self, { volume = info.volume, pitch = info.pitch })
+    -- the settings page's volume on top of all the rest
+    local overall = kind == 'swing' and volumes.swing or volumes.hit
+    sound.playSoundFile3d(info.file, self, { volume = info.volume * overall, pitch = info.pitch })
     return info.file
 end
 
@@ -538,20 +625,21 @@ end
 -- it, and when it's a pure hit on medium or heavy armor over a living body, the weapon's flesh sound under it. That
 -- flesh sound always plays, quieter, and the pure hit and its layers only ARMOR_OVER_FLESH_CHANCE of the time.
 -- Returns the first file played, or nil.
-local function playHitSounds(file, surface, weapon, tag, via, volume, pitch, attackType)
+local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
+    local weapon, attackType = attack.weapon, attack.attackType
     local fleshUnder = FLESH_UNDER[surface] and bodyType() == 'flesh' and isPure(categoryOf[file])
     local played = nil
     if not fleshUnder or math.random() < ARMOR_OVER_FLESH_CHANCE then
-        played = play(file, 'hit', surface, weapon, tag, via, volume, pitch, attackType)
+        played = play(file, 'hit', surface, attack, tag, via, volume, pitch)
         for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
-            play(layer, 'hit', surface, weapon, tag, via, volume, nil, attackType, 'layer')
+            play(layer, 'hit', surface, attack, tag, via, volume, nil, 'layer')
         end
     end
     if fleshUnder then
         local flesh = pickFrom('hit', { FLESH_HIT_SOUNDS }, weapon, nil, attackType)
         if flesh then
-            local under = play(flesh, 'hit', surface, weapon, tag, via, (volume or 1) * FLESH_UNDER_VOLUME, nil,
-                attackType, 'underneath')
+            local under = play(flesh, 'hit', surface, attack, tag, via, (volume or 1) * FLESH_UNDER_VOLUME, nil,
+                'underneath')
             played = played or under
         end
     end
@@ -562,26 +650,27 @@ end
 -- Health Damage, play one alongside it. The vanilla sound is stopped even if a handler stops the CSO one. weapon is
 -- what the attack is made with (weaponKind); a swing's is taken from this actor's right hand when not given.
 -- Returns the file played, or nil.
-local function swap(tag, options, via, weapon, attackType)
+local function swap(tag, options, via, attack)
     local folder = TAGS[tag:lower()]
     if not folder then return nil end
     options = options or {}
-    if not weapon then
+    if not attack then
         if options.weapon or options.attacker then
-            weapon = weaponKind(options.weapon, options.attacker)
+            attack = attackWith(options.weapon, options.attacker, options.attackType)
         elseif folder == 'swing' then
-            weapon = swingingWith()
+            attack = swinging(options.attackType)
+        else
+            attack = { attackType = options.attackType }
         end
     end
-    if attackType == nil then attackType = options.attackType end
-    local file = pickFor(tag, weapon, options.force, attackType)
+    local file = pickFor(tag, attack.weapon, options.force, attack.attackType)
     if not file then return nil end
 
     if folder ~= 'body' then sound.stopSound3d(tag, self) end
     if folder == 'swing' then
-        return play(file, 'swing', nil, weapon, tag, via, options.volume, options.pitch, attackType)
+        return play(file, 'swing', nil, attack, tag, via, options.volume, options.pitch)
     end
-    return playHitSounds(file, landsOn(tag), weapon, tag, via, options.volume, options.pitch, attackType)
+    return playHitSounds(file, landsOn(tag), attack, tag, via, options.volume, options.pitch)
 end
 
 local function checkVolume(volume, caller)
@@ -615,7 +704,7 @@ local function playSwing(weapon, volume, attackType)
     volume = checkVolume(volume, 'playSwing')
     attackType = checkAttackType(attackType, 'playSwing')
     local file = pickFrom('swing', SWING_TABLES, kind, nil, attackType)
-    return file and play(file, 'swing', nil, kind, nil, 'playSwing', volume, nil, attackType)
+    return file and play(file, 'swing', nil, { weapon = kind, attackType = attackType }, nil, 'playSwing', volume)
 end
 
 local function playHit(armor, volume, weapon, attackType)
@@ -628,11 +717,11 @@ local function playHit(armor, volume, weapon, attackType)
     attackType = checkAttackType(attackType, 'playHit')
     local file = pickFrom('hit', HIT_SOUNDS[surface], kind, nil, attackType)
     if not file then return nil end
-    return playHitSounds(file, surface, kind, nil, 'playHit', volume, nil, attackType)
+    return playHitSounds(file, surface, { weapon = kind, attackType = attackType }, nil, 'playHit', volume)
 end
 
-local function swapIfPlaying(tag, via, weapon, attackType)
-    if sound.isSoundPlaying(tag, self) then return swap(tag, nil, via, weapon, attackType) end
+local function swapIfPlaying(tag, via, attack)
+    if sound.isSoundPlaying(tag, self) then return swap(tag, nil, via, attack) end
     return nil
 end
 
@@ -642,8 +731,8 @@ I.AnimationController.addPlayBlendedAnimationHandler(function(_, options)
     local startKey, stopKey = options.startKey or '', options.stopKey or ''
     if endsWith(startKey, ' max attack') then
         windupUntil = nil
-        swapIfPlaying(WEAPON_SWISH, 'release', nil, attackTypeOf(startKey))
-    elseif endsWith(stopKey, ' max attack') and lookup(SWING_SOUNDS, swingingWith()) then
+        swapIfPlaying(WEAPON_SWISH, 'release', swinging(attackTypeOf(startKey)))
+    elseif endsWith(stopKey, ' max attack') and lookup(SWING_SOUNDS, swinging().weapon) then
         windupUntil = core.getSimulationTime() + WINDUP_WATCH
         windupAttack = attackTypeOf(stopKey)
     end
@@ -662,28 +751,34 @@ local function onUpdate()
     if pendingHit then
         local attack = pendingHit
         pendingHit = nil
-        local weapon = weaponKind(attack.weapon, attack.attacker)
         -- chop, slash or thrust, for a melee attack made with a weapon
         local attackType = attack.weapon and attack.sourceType == I.Combat.ATTACK_SOURCE_TYPES.Melee and attack.type or nil
+        local made = attackWith(attack.weapon, attack.attacker, attackType)
         local onArmor = false
         for _, tag in ipairs(ARMOR_HIT_TAGS) do
             if sound.isSoundPlaying(tag, self) then
                 onArmor = true
-                swap(tag, nil, 'hit', weapon, attackType)
+                swap(tag, nil, 'hit', made)
             end
         end
         -- The handlers after ours have taken armor off this same attack table by now. Health left over is what
         -- plays Health Damage; checking the sound as well leaves out hits the builtin handler never got to.
         local health = attack.damage and attack.damage.health or 0
         if LAYER_UNARMORED_HITS and not onArmor and health > 0 and sound.isSoundPlaying(HEALTH_DAMAGE, self) then
-            swap(HEALTH_DAMAGE, nil, 'unarmored hit', weapon, attackType)
+            swap(HEALTH_DAMAGE, nil, 'unarmored hit', made)
         end
     end
     if windupUntil then
-        if swapIfPlaying(WEAPON_SWISH, 'early release', nil, windupAttack) or core.getSimulationTime() > windupUntil then
+        if swapIfPlaying(WEAPON_SWISH, 'early release', swinging(windupAttack))
+            or core.getSimulationTime() > windupUntil then
             windupUntil = nil
         end
     end
+end
+
+local function setWeaponKind(recordId, weapon)
+    if type(recordId) ~= 'string' then error('CombatSoundsOverhaul.setWeaponKind: recordId must be a string', 2) end
+    kindOverrides[recordId:lower()] = weapon ~= nil and checkWeapon(weapon, 'setWeaponKind') or nil
 end
 
 local function emit(tag, options)
@@ -739,10 +834,13 @@ return {
         playHit = playHit,
 
         --- Adds a handler that hears about every CSO sound on this actor just before it plays, newest handler first.
-        -- It gets a table it may change: file, volume and pitch are what will play. The rest describe the sound:
+        -- It gets a table it may change: file, volume and pitch are what will play (the volume before the settings
+        -- page's Hit or Swing Volume, which applies on top). The rest describe the sound:
         --   kind: 'swing' or 'hit'
         --   tag: the vanilla sound id it answers, or nil when played through playSwing / playHit
         --   weapon: one of WEAPON, or nil when unknown
+        --   weaponId: the record id of the weapon swung or hit with, or nil for bare hands, a creature's own attack
+        --   and sounds from playSwing / playHit
         --   armor: one of ARMOR for a hit
         --   attackType: one of I.Combat.ATTACK_TYPES for a swing or a melee hit made with a weapon (and when asked
         --   for), otherwise nil
@@ -772,6 +870,14 @@ return {
         -- @return #string VFS path of the sound played, or nil if nothing played
         emit = emit,
 
+        --- Makes CSO treat a weapon as another kind, e.g. a mod's knuckle-duster as Blunt or its katana as
+        -- LongBladeTwoHanded, for this actor's swings and for the hits it takes. It's per actor like the rest of the
+        -- interface, so call it from a script attached to every actor (NPC, CREATURE, PLAYER), for instance where
+        -- that script loads.
+        -- @param #string recordId The weapon's record id, any case
+        -- @param weapon One of WEAPON, or nil to go back to what its record says
+        setWeaponKind = setWeaponKind,
+
         --- A CSO file for a vanilla tag, picked as emit would pick it, without playing it. nil if nothing answers.
         pickFile = function(tag, options)
             options = options or {}
@@ -779,7 +885,7 @@ return {
             if options.weapon or options.attacker then
                 weapon = weaponKind(options.weapon, options.attacker)
             elseif TAGS[tostring(tag):lower()] == 'swing' then
-                weapon = swingingWith()
+                weapon = swinging().weapon
             end
             return pickFor(tostring(tag), weapon, options.force, checkAttackType(options.attackType, 'pickFile'))
         end,
@@ -790,6 +896,13 @@ return {
     },
     engineHandlers = {
         onUpdate = onUpdate,
+        -- ask the player for the volumes from the settings page
+        onActive = function()
+            if isPlayer then return end
+            for _, player in ipairs(nearby.players) do
+                player:sendEvent('CombatSoundsOverhaul_WhatVolumes', self.object)
+            end
+        end,
     },
     -- For scripts that can't reach this actor's interface, such as global scripts
     eventHandlers = {
@@ -799,5 +912,17 @@ return {
         CombatSoundsOverhaul_PlaySwing = function(data) playSwing(data.weapon, data.volume, data.attackType) end,
         -- { armor = one of ARMOR, volume = ..., weapon = one of WEAPON, attackType = one of I.Combat.ATTACK_TYPES }
         CombatSoundsOverhaul_PlayHit = function(data) playHit(data.armor, data.volume, data.weapon, data.attackType) end,
+        -- { recordId = ..., weapon = one of WEAPON or nil }, as for setWeaponKind
+        CombatSoundsOverhaul_SetWeaponKind = function(data) setWeaponKind(data.recordId, data.weapon) end,
+
+        -- The volumes from the settings page, between the player's copy of this script and everyone else's
+        CombatSoundsOverhaul_WhatVolumes = function(actor)
+            if isPlayer then actor:sendEvent('CombatSoundsOverhaul_Volumes', volumes) end
+        end,
+        CombatSoundsOverhaul_Volumes = function(data)
+            if isPlayer then return end
+            volumes.hit = tonumber(data.hit) or 1
+            volumes.swing = tonumber(data.swing) or 1
+        end,
     },
 }
