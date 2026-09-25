@@ -41,10 +41,10 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 - Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
   - Short blades: slices and flesh impacts.
-  - One-handed long blades: flesh impacts. Two-handed ones crunch too.
+  - Long blades: flesh impacts.
   - A thrust with a blade or spear: stabs. Blades keep their flesh impacts among them.
   - Blunt weapons: crunches and punches.
-  - Fists: punches and flesh impacts.
+  - Fists: punches, crunches and flesh impacts.
   - Everything else, spears' swings included: flesh and punchy impacts.
 - Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
 - Skeletons, liches and bonelords get plain metallic hits, or plain stabs for a thrust, whatever the weapon.

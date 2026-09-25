@@ -100,13 +100,11 @@ local SWING_SOUNDS = {
 local FLESH_HIT_SOUNDS = {
     shortBlade = { 'fleshySlice', 'flesh' },
     shortBladeThrust = { 'fleshyStab', 'flesh' },
-    longBlade1 = { 'flesh' },
-    longBlade1Thrust = { 'fleshyStab', 'flesh' },
-    longBlade2 = { 'flesh', 'crunchyFlesh' },
-    longBlade2Thrust = { 'fleshyStab', 'flesh', 'crunchyFlesh' },
+    longBlade = { 'flesh' },
+    longBladeThrust = { 'fleshyStab', 'flesh' },
     spearThrust = { 'fleshyStab' },
     blunt = { 'crunchyFlesh', 'punchyFlesh' },
-    handToHand = { 'punchyFlesh', 'flesh' },
+    handToHand = { 'punchyFlesh', 'flesh', 'crunchyFlesh' },
     default = { 'flesh', 'punchyFlesh' }, -- axes, staves, spears' swings, thrown weapons, arrows, creatures' own attacks
 }
 -- Medium and heavy armor: an armor hit only takes health once it's through, so only the armor hits with flesh or
