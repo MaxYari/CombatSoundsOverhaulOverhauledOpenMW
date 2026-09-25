@@ -104,19 +104,16 @@ local BUILTIN_CATEGORIES = {
 -- An unarmored spot, light armor, a creature of flesh and blood, and the flesh under medium and heavy armor. The
 -- flesh stabs are only for thrusts, and metallicPunchyFleshHit is for everything but arrows and fists.
 local FLESH_HIT_SOUNDS = {
-    shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit', 'cutPure' },
-    shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit', 'stabPure' },
-    longBlade = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit', 'cutPure' },
-    longBladeThrust = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit', 'stabPure' },
-    spearThrust = { 'FleshStab', 'metallicPunchyFleshHit', 'stabPure' },
-    axe = { 'FleshHit', 'metallicPunchyFleshHit', 'cutPure' },
-    blunt = { 'metallicPunchyFleshHit', 'BluntHitPure' },
-    staff = { 'FleshHit', 'metallicPunchyFleshHit', 'BluntHitPure' },
-    thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit', 'stabPure' },
-    bow = { 'FleshStab', 'FleshHit', 'stabPure' },
-    crossbow = { 'FleshStab', 'FleshHit', 'stabPure' },
+    shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' },
+    shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    longBlade = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit' }, -- cuts and thrusts alike
+    spearThrust = { 'FleshStab', 'metallicPunchyFleshHit' },
+    blunt = { 'metallicPunchyFleshHit' },
+    thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    bow = { 'FleshStab', 'FleshHit' },
+    crossbow = { 'FleshStab', 'FleshHit' },
     handToHand = { 'FleshHit' },
-    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- spears' swings, creatures' own attacks
+    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- axes, staves, spears' swings, creatures' own attacks
 }
 -- Medium and heavy armor: the pure armor hits, and metallicPunchyFleshHit for everything but arrows and fists. On a
 -- living actor the weapon's flesh sound plays under a pure hit; the metallic punchy one has flesh in it already.
@@ -183,15 +180,6 @@ local HIT_LAYER_CHANCES = {
     RingingBladePure = 0.3,
     BluntRingPure = 0.3,
 }
--- The same, only where FLESH_HIT_SOUNDS lists them: a pure cut, stab or blunt hit over the flesh hit. On bone and
--- ghosts the cut and stab are the hit itself.
-local FLESH_LAYER_CHANCES = {
-    cutPure = 0.33,
-    stabPure = 0.33,
-    BluntHitPure = 0.33,
-}
--- *_SOUNDS table -> layers of its own, on top of HIT_LAYER_CHANCES
-local LAYERS_OF_TABLE = { [FLESH_HIT_SOUNDS] = FLESH_LAYER_CHANCES }
 -- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
 -- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
 local FLESH_UNDER = { medium = true, heavy = true }
@@ -476,23 +464,14 @@ local function landsOn(tag)
     return armor
 end
 
--- How often a category plays as a layer where this *_SOUNDS table lists it, or nil when it joins the draw
-local function layerChance(folder, soundsTable, category)
-    if folder ~= 'hit' then return nil end
-    local own = LAYERS_OF_TABLE[soundsTable]
-    return own and own[category] or HIT_LAYER_CHANCES[category]
-end
-
--- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers as
--- { category = ..., chance = ... }
+-- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers
 local function categoriesFor(folder, soundsTables, weapon, attackType)
     local drawn, layers = nil, nil
     for _, soundsTable in ipairs(soundsTables or {}) do
         for _, category in ipairs(lookup(soundsTable, weapon, attackType) or {}) do
-            local chance = layerChance(folder, soundsTable, category)
-            if chance then
+            if folder == 'hit' and HIT_LAYER_CHANCES[category] then
                 layers = layers or {}
-                layers[#layers + 1] = { category = category, chance = chance }
+                layers[#layers + 1] = category
             else
                 drawn = drawn or {}
                 drawn[#drawn + 1] = category
@@ -523,9 +502,9 @@ end
 local function rollLayers(folder, soundsTables, weapon, attackType)
     local _, layers = categoriesFor(folder, soundsTables, weapon, attackType)
     local rolled = {}
-    for _, layer in ipairs(layers or {}) do
-        if math.random() < layer.chance then
-            rolled[#rolled + 1] = drawFrom(folder, { layer.category })
+    for _, category in ipairs(layers or {}) do
+        if math.random() < HIT_LAYER_CHANCES[category] then
+            rolled[#rolled + 1] = drawFrom(folder, { category })
         end
     end
     return rolled
