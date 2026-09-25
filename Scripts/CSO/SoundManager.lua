@@ -68,18 +68,18 @@ local HIT_CATEGORIES = {
     cutPure = { { 11, 17 } },
     BoneHit = { 79 },
     -- armor
-    armorHeavyPureHit = { { 22, 24 }, { 33, 40 }, { 82, 95 }, { 97, 102 } },
     armorMediumPureHit = { { 41, 56 }, 71, 72 },
     BluntBoneHit = { 80, 81 },
     BluntRingPure = { 69 },
     RingingBladePure = { { 18, 21 }, 30 },
-    ringingBladeOnMetalPure = { 31, 32, { 57, 60 }, 96 },
+    armorHeavyBladePureHit = { { 22, 24 }, 31, 32, { 57, 60 }, 96 },
+    armorHeavyBluntPureHit = { { 33, 40 }, { 82, 95 }, { 97, 102 } },
 }
 
 -- Which categories answer an attack, by what it's made with: a weaponKind family with its hands (longBlade1), or
 -- the family alone. A thrust with a weapon first looks for those keys with Thrust on the end (longBlade1Thrust,
--- longBladeThrust), then the plain ones, then `thrust`. `default` covers the rest; without one, the vanilla sound
--- stays. Every file of every listed category is in the draw.
+-- longBladeThrust), then `thrust`, then the plain ones. `default` covers the rest; without one, the vanilla sound
+-- stays. Every file of every listed category goes into one draw, so a bigger category comes up more often.
 local SWING_SOUNDS = {
     shortBlade = { 'sharpMetal', 'ringingBladeMetal' },
     longBlade1 = { 'ringingBladeMetal', 'bladeMetal' },
@@ -92,47 +92,91 @@ local SWING_SOUNDS = {
     thrown = { 'sharpMetal', 'plain' },
     handToHand = { 'plain' },
 }
--- An unarmored spot, light armor, or a creature of flesh and blood. The fleshy stabs are only for thrusts.
+-- An unarmored spot, light armor, a creature of flesh and blood, and the flesh under medium and heavy armor. The
+-- flesh stabs are only for thrusts, and metallicPunchyFleshHit is for everything but arrows and fists.
 local FLESH_HIT_SOUNDS = {
-    shortBlade = { 'FleshSlice', 'FleshHit' },
-    shortBladeThrust = { 'FleshStab', 'FleshHit' },
-    longBlade = { 'FleshHit' },
-    longBladeThrust = { 'FleshStab', 'FleshHit' },
-    spearThrust = { 'FleshStab' },
+    shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' },
+    shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    longBlade = { 'FleshHit', 'metallicPunchyFleshHit' },
+    longBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    spearThrust = { 'FleshStab', 'metallicPunchyFleshHit' },
     blunt = { 'metallicPunchyFleshHit' },
-    handToHand = { 'metallicPunchyFleshHit', 'FleshHit' },
-    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- axes, staves, spears' swings, thrown weapons, arrows, creatures' own attacks
+    thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
+    bow = { 'FleshStab', 'FleshHit' },
+    crossbow = { 'FleshStab', 'FleshHit' },
+    handToHand = { 'FleshHit' },
+    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- axes, staves, spears' swings, creatures' own attacks
 }
--- Medium and heavy armor, on top of the flesh sounds of the weapon (HIT_SOUNDS). The blunt ring is only for
--- thrusts, as the fleshy stabs are on flesh.
-local FLESHY_ARMOR_HIT_SOUNDS = {
-    shortBladeThrust = { 'armorMediumPureHit', 'BluntRingPure' },
-    longBladeThrust = { 'armorMediumPureHit', 'BluntRingPure' },
-    spearThrust = { 'armorMediumPureHit', 'BluntRingPure' },
-    default = { 'armorMediumPureHit', 'BluntBoneHit' },
+-- Medium and heavy armor: the pure armor hits, and metallicPunchyFleshHit for everything but arrows and fists. On a
+-- living actor the weapon's flesh sound plays under a pure hit; the metallic punchy one has flesh in it already.
+local MEDIUM_ARMOR_HIT_SOUNDS = {
+    shortBlade = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    longBlade = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    axe = { 'armorMediumPureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    blunt = { 'armorMediumPureHit', 'BluntRingPure', 'metallicPunchyFleshHit' },
+    thrust = { 'armorMediumPureHit', 'stabPure', 'metallicPunchyFleshHit' },
+    handToHand = { 'armorMediumPureHit' },
+    bow = { 'armorMediumPureHit' },
+    crossbow = { 'armorMediumPureHit' },
+    default = { 'armorMediumPureHit', 'metallicPunchyFleshHit' }, -- staves, spears' swings, thrown weapons, claws
 }
--- Skeletons, liches, bonelords: the same for every weapon
+local HEAVY_ARMOR_HIT_SOUNDS = {
+    shortBlade = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    longBlade = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    axe = { 'armorHeavyBladePureHit', 'RingingBladePure', 'metallicPunchyFleshHit' },
+    blunt = { 'armorHeavyBluntPureHit', 'BluntRingPure', 'metallicPunchyFleshHit' },
+    staff = { 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' },
+    handToHand = { 'armorHeavyBluntPureHit' },
+    thrust = { 'armorHeavyBladePureHit', 'stabPure', 'metallicPunchyFleshHit' },
+    bluntThrust = { 'armorHeavyBluntPureHit', 'stabPure', 'metallicPunchyFleshHit' },
+    bow = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
+    crossbow = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
+    default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' }, -- spears' swings, claws, thrown
+}
+-- Skeletons, liches, bonelords: the pure cut and stab of anything with no flesh or armor, with the bone hits
 local BONE_HIT_SOUNDS = {
+    blunt = { 'cutPure', 'BluntBoneHit', 'BoneHit' },
+    thrust = { 'stabPure', 'BoneHit' },
+    default = { 'cutPure', 'BoneHit' },
+}
+-- Ghosts, spectres, spirits: no flesh or armor, so only the pure cut and stab
+local GHOST_HIT_SOUNDS = {
     thrust = { 'stabPure' },
     default = { 'cutPure' },
 }
 -- A creature of metal, which doesn't bleed
 local METAL_BODY_HIT_SOUNDS = {
-    shortBlade = { 'armorHeavyPureHit', 'ringingBladeOnMetalPure' },
-    longBlade = { 'armorHeavyPureHit', 'ringingBladeOnMetalPure' },
-    default = { 'armorHeavyPureHit' },
+    shortBlade = { 'armorHeavyBladePureHit', 'RingingBladePure' },
+    longBlade = { 'armorHeavyBladePureHit', 'RingingBladePure' },
+    axe = { 'armorHeavyBladePureHit', 'RingingBladePure' },
+    blunt = { 'armorHeavyBluntPureHit', 'BluntRingPure' },
+    staff = { 'armorHeavyBluntPureHit' },
+    handToHand = { 'armorHeavyBluntPureHit' },
+    thrust = { 'armorHeavyBladePureHit' },
+    bluntThrust = { 'armorHeavyBluntPureHit' },
+    default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
 }
--- What the hit lands on -> the tables above that answer it; an attack draws from what each of them gives it. Medium
--- and heavy armor get the flesh sounds of the weapon as well as the armor ones. Ghosts have no sounds yet, so they
--- keep only the body hit.
+-- What the hit lands on -> the tables above that answer it; an attack draws from what each of them gives it
 local HIT_SOUNDS = {
     light = { FLESH_HIT_SOUNDS },
-    medium = { FLESHY_ARMOR_HIT_SOUNDS, FLESH_HIT_SOUNDS },
-    heavy = { FLESHY_ARMOR_HIT_SOUNDS, FLESH_HIT_SOUNDS },
+    medium = { MEDIUM_ARMOR_HIT_SOUNDS },
+    heavy = { HEAVY_ARMOR_HIT_SOUNDS },
     flesh = { FLESH_HIT_SOUNDS },
     metal = { METAL_BODY_HIT_SOUNDS },
     bone = { BONE_HIT_SOUNDS },
+    ghost = { GHOST_HIT_SOUNDS },
 }
+-- Hit categories that don't join the draw: where a *_SOUNDS table lists one, it plays on top of the hit drawn from
+-- the others, this often
+local HIT_LAYER_CHANCES = {
+    RingingBladePure = 0.3,
+    BluntRingPure = 0.3,
+}
+-- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
+-- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
+local FLESH_UNDER = { medium = true, heavy = true }
+local FLESH_UNDER_VOLUME = 0.6
+local ARMOR_OVER_FLESH_CHANCE = 0.75
 local SWING_TABLES = { SWING_SOUNDS }
 -- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the CSO layer starts with it and
 -- drowns it out. emit('Health Damage') plays the layer either way.
@@ -215,7 +259,7 @@ local ARMOR_BY_NAME = {
     Heavy = 'heavy',
     Metal = 'metal',     -- a creature of metal: dwemer machines
     Bone = 'bone',       -- skeletons, liches, bonelords
-    Ghost = 'ghost',     -- ghosts, spectres, spirits, which have no sounds yet
+    Ghost = 'ghost',     -- ghosts, spectres, spirits
 }
 local function invert(t)
     local inverted = {}
@@ -255,6 +299,7 @@ end
 -- folder ('swing' or 'hit') -> { all = every file in some category, [category] = its files }. Listed on first use
 -- rather than at load: most actors never swing or get hit.
 local files = nil
+local categoryOf = {} -- path -> the category it's in
 local function getFiles()
     if files then return files end
     files = {}
@@ -275,6 +320,7 @@ local function getFiles()
             for _, path in ipairs(found) do
                 if inEntries(tonumber(path:match('(%d+)%.%w+$')), entries) then
                     list[#list + 1] = path
+                    categoryOf[path] = categoryOf[path] or category
                     if not inAll[path] then
                         inAll[path] = true
                         all[#all + 1] = path
@@ -362,14 +408,20 @@ end
 -- The categories a *_SOUNDS table gives an attack made with `weapon`, or nil
 local function lookup(soundsTable, weapon, attackType)
     if not soundsTable then return nil end
-    local thrust = isThrust(weapon, attackType)
-    if weapon then
-        local withHands = weapon.hands and (weapon.family .. weapon.hands)
-        local categories = thrust and (withHands and soundsTable[withHands .. 'Thrust'] or soundsTable[weapon.family .. 'Thrust'])
-            or withHands and soundsTable[withHands] or soundsTable[weapon.family]
-        if categories then return categories end
+    local withHands = weapon and weapon.hands and (weapon.family .. weapon.hands)
+    local keys = {}
+    if isThrust(weapon, attackType) then
+        if withHands then keys[#keys + 1] = withHands .. 'Thrust' end
+        keys[#keys + 1] = weapon.family .. 'Thrust'
+        keys[#keys + 1] = 'thrust'
     end
-    return thrust and soundsTable.thrust or soundsTable.default
+    if withHands then keys[#keys + 1] = withHands end
+    if weapon then keys[#keys + 1] = weapon.family end
+    keys[#keys + 1] = 'default'
+    for _, key in ipairs(keys) do
+        if soundsTable[key] then return soundsTable[key] end
+    end
+    return nil
 end
 
 -- What a hit with this tag lands on: armor by weight, or with no armor, the actor's body
@@ -381,19 +433,50 @@ end
 
 -- A random file from the categories the given *_SOUNDS tables give an attack made with `weapon`, or nil when none
 -- answers. force draws from the whole folder then.
-local function pickFrom(folder, soundsTables, weapon, force, attackType)
-    local categories = nil
+-- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers
+local function categoriesFor(folder, soundsTables, weapon, attackType)
+    local drawn, layers = nil, nil
     for _, soundsTable in ipairs(soundsTables or {}) do
-        local found = lookup(soundsTable, weapon, attackType)
-        if found then
-            categories = categories or {}
-            for _, category in ipairs(found) do categories[#categories + 1] = category end
+        for _, category in ipairs(lookup(soundsTable, weapon, attackType) or {}) do
+            if folder == 'hit' and HIT_LAYER_CHANCES[category] then
+                layers = layers or {}
+                layers[#layers + 1] = category
+            else
+                drawn = drawn or {}
+                drawn[#drawn + 1] = category
+            end
         end
     end
+    return drawn, layers
+end
+
+local function drawFrom(folder, categories)
     local list = categories and pool(folder, categories)
-    if (not list or #list == 0) and force then list = getFiles()[folder].all end
     if not list or #list == 0 then return nil end
     return list[math.random(#list)]
+end
+
+-- A random file from the categories the given *_SOUNDS tables give an attack made with `weapon`, drawn from all of
+-- them together, or nil when none answers. force draws from the whole folder then. Layers aren't in it.
+local function pickFrom(folder, soundsTables, weapon, force, attackType)
+    local file = drawFrom(folder, (categoriesFor(folder, soundsTables, weapon, attackType)))
+    if not file and force then
+        local all = getFiles()[folder].all
+        if #all > 0 then file = all[math.random(#all)] end
+    end
+    return file
+end
+
+-- The layers that come up this time, each by its own chance: { file, ... }
+local function rollLayers(folder, soundsTables, weapon, attackType)
+    local _, layers = categoriesFor(folder, soundsTables, weapon, attackType)
+    local rolled = {}
+    for _, category in ipairs(layers or {}) do
+        if math.random() < HIT_LAYER_CHANCES[category] then
+            rolled[#rolled + 1] = drawFrom(folder, { category })
+        end
+    end
+    return rolled
 end
 
 -- A random CSO file for a vanilla tag and an attack made with `weapon`
@@ -420,7 +503,7 @@ local playHandlers = {}
 
 -- Every CSO sound goes through here: the handlers see it first, may change its file, volume and pitch, and one
 -- returning false stops it. Returns the file played, or nil.
-local function play(file, kind, surface, weapon, tag, via, volume, pitch, attackType)
+local function play(file, kind, surface, weapon, tag, via, volume, pitch, attackType, role)
     local info = {
         file = file,
         volume = volume or 1,
@@ -430,18 +513,49 @@ local function play(file, kind, surface, weapon, tag, via, volume, pitch, attack
         weapon = weapon and NAME_OF_WEAPON[weapon],
         armor = surface and NAME_OF_SURFACE[surface],
         attackType = attackType,
-        layered = tag ~= nil and TAGS[tag:lower()] == 'body',
+        category = categoryOf[file],
+        layered = role ~= nil or (tag ~= nil and TAGS[tag:lower()] == 'body'),
+        underneath = role == 'underneath',
         via = via,
     }
     local stopped = auxUtil.callEventHandlers(playHandlers, info)
     if debugLog then
         print(string.format('[Combat Sounds Overhaul] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
-            tostring(info.file), describe(via, weapon, surface, attackType), info.pitch,
+            tostring(info.file), describe(via, weapon, surface, attackType) .. ', ' .. tostring(info.category)
+                .. (role and (', ' .. role) or ''), info.pitch,
             stopped and ' - stopped by a handler' or ''))
     end
     if stopped or not info.file then return nil end
     sound.playSoundFile3d(info.file, self, { volume = info.volume, pitch = info.pitch })
     return info.file
+end
+
+local function isPure(category)
+    return category ~= nil and category:lower():find('pure', 1, true) ~= nil
+end
+
+-- Plays a hit drawn for what it lands on (`file`), with what goes with it: the layers that roll this time on top of
+-- it, and when it's a pure hit on medium or heavy armor over a living body, the weapon's flesh sound under it. That
+-- flesh sound always plays, quieter, and the pure hit and its layers only ARMOR_OVER_FLESH_CHANCE of the time.
+-- Returns the first file played, or nil.
+local function playHitSounds(file, surface, weapon, tag, via, volume, pitch, attackType)
+    local fleshUnder = FLESH_UNDER[surface] and bodyType() == 'flesh' and isPure(categoryOf[file])
+    local played = nil
+    if not fleshUnder or math.random() < ARMOR_OVER_FLESH_CHANCE then
+        played = play(file, 'hit', surface, weapon, tag, via, volume, pitch, attackType)
+        for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
+            play(layer, 'hit', surface, weapon, tag, via, volume, nil, attackType, 'layer')
+        end
+    end
+    if fleshUnder then
+        local flesh = pickFrom('hit', { FLESH_HIT_SOUNDS }, weapon, nil, attackType)
+        if flesh then
+            local under = play(flesh, 'hit', surface, weapon, tag, via, (volume or 1) * FLESH_UNDER_VOLUME, nil,
+                attackType, 'underneath')
+            played = played or under
+        end
+    end
+    return played
 end
 
 -- The one swap every vanilla sound goes through: stop it on this actor and play a CSO one for it instead, or for
@@ -464,8 +578,10 @@ local function swap(tag, options, via, weapon, attackType)
     if not file then return nil end
 
     if folder ~= 'body' then sound.stopSound3d(tag, self) end
-    return play(file, folder == 'swing' and 'swing' or 'hit', landsOn(tag), weapon, tag, via, options.volume, options.pitch,
-        attackType)
+    if folder == 'swing' then
+        return play(file, 'swing', nil, weapon, tag, via, options.volume, options.pitch, attackType)
+    end
+    return playHitSounds(file, landsOn(tag), weapon, tag, via, options.volume, options.pitch, attackType)
 end
 
 local function checkVolume(volume, caller)
@@ -511,7 +627,8 @@ local function playHit(armor, volume, weapon, attackType)
     local kind = weapon ~= nil and checkWeapon(weapon, 'playHit') or nil
     attackType = checkAttackType(attackType, 'playHit')
     local file = pickFrom('hit', HIT_SOUNDS[surface], kind, nil, attackType)
-    return file and play(file, 'hit', surface, kind, nil, 'playHit', volume, nil, attackType)
+    if not file then return nil end
+    return playHitSounds(file, surface, kind, nil, 'playHit', volume, nil, attackType)
 end
 
 local function swapIfPlaying(tag, via, weapon, attackType)
@@ -599,7 +716,6 @@ return {
 
         --- What a hit lands on: Unarmored (also a creature of flesh), Light, Medium, Heavy, Metal (a creature of
         -- metal, like a dwemer machine), Bone (skeletons, liches, bonelords) and Ghost (ghosts, spectres, spirits).
-        -- Ghost has no sounds yet.
         ARMOR = enum(ARMOR_BY_NAME),
 
         --- What this actor's body counts as when a hit lands on no armor: one of ARMOR, but only Unarmored (flesh and
@@ -630,7 +746,9 @@ return {
         --   armor: one of ARMOR for a hit
         --   attackType: one of I.Combat.ATTACK_TYPES for a swing or a melee hit made with a weapon (and when asked
         --   for), otherwise nil
-        --   layered: true when it plays over the vanilla body hit rather than in place of a vanilla sound
+        --   layered: true when it plays on top of another sound rather than in place of a vanilla one
+        --   underneath: true for the flesh sound played under an armor hit on a living actor
+        --   category: the category the file is in, e.g. 'armorHeavyPureHit' or, for a layer, 'RingingBladePure'
         --   via: what set it off (release, early release, text key, hit, unarmored hit, emit, event, playSwing, playHit)
         -- Returning false stops the sound and skips the older handlers. A vanilla sound it answers stays stopped.
         -- Add it from a script attached after this one, as a handler added to I.Combat would be.

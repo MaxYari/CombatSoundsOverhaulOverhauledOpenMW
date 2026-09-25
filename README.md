@@ -38,17 +38,22 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Hits, by what they land on:**
 
-- Medium and heavy armor: medium armor impacts, plus the flesh impacts the weapon would get on light armor. A thrust with a blade or spear adds a blunt ring, and everything else a crunchy flesh one with a blunt ring.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
-  - Short blades: slices and flesh impacts.
-  - Long blades: flesh impacts.
-  - A thrust with a blade or spear: stabs. Blades keep their flesh impacts among them.
-  - Blunt weapons: metallic punchy flesh impacts.
-  - Fists: metallic punchy and flesh impacts.
-  - Everything else, spears' swings included: flesh and punchy impacts.
-- Dwemer machines get clean heavy armor clanks, with ringing metal-on-metal ones added for blades.
-- Skeletons, liches and bonelords get plain metallic hits, or plain stabs for a thrust, whatever the weapon.
-- Ghosts, spectres and spirits have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+  - Short blades: slices, flesh impacts and metallic punchy ones.
+  - Long blades, axes, staves, spears' swings and claws: flesh impacts and metallic punchy ones.
+  - A thrust with a blade or spear: stabs among them.
+  - Blunt weapons: metallic punchy impacts.
+  - Fists: flesh impacts.
+  - Arrows and bolts: stabs and flesh impacts.
+- Medium and heavy armor: a pure armor impact for the weapon (heavy armor has one set for blades and one for blunt weapons), or a thrust's pure stab. Everything but fists and arrows can also draw a metallic punchy impact instead.
+  - Under a pure impact, the wearer's flesh sound for the weapon always plays, at 60% of the volume. The pure impact itself plays three times out of four.
+  - A metallic punchy impact already has flesh in it, so it plays alone.
+  - Blades ring on top three times out of ten, and so do blunt weapons with a blunt ring.
+- Dwemer machines: the pure heavy armor impacts, with the same rings on top, but no flesh.
+- Skeletons, liches and bonelords: pure cuts, or pure stabs for a thrust, with bone hits among them. Blunt weapons add blunt bone hits.
+- Ghosts, spectres and spirits: pure cuts, or pure stabs for a thrust. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+
+When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The rings are the exception: they're separate layers with a chance of their own.
 
 A thrust only counts as one for a melee attack made with a weapon.
 
@@ -133,7 +138,9 @@ cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thru
 - `weapon`: one of `WEAPON`, or `nil` if unknown.
 - `armor`: one of `ARMOR`, for a hit.
 - `attackType`: one of `I.Combat.ATTACK_TYPES`, for a hit by a melee weapon, or when one was asked for.
-- `layered`: `true` when it plays on top of the vanilla body hit, rather than in place of a vanilla sound.
+- `layered`: `true` when it plays on top of another sound (the vanilla body hit, or CSO's own hit) rather than in place of a vanilla one.
+- `underneath`: `true` for the flesh sound played under a pure hit on armor.
+- `category`: the sound group the file is from, such as `armorHeavyBladePureHit` or, for a ring, `RingingBladePure`.
 - `via`: what set it off. This is `release`, `early release`, `text key`, `hit`, `unarmored hit`, `emit`, `event`, `playSwing` or `playHit`.
 
 Returning `false` stops the sound and skips the older handlers. A vanilla sound CSO was replacing stays stopped either way.
