@@ -63,7 +63,11 @@ Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\
 
 ## For developers
 
-Every NPC, creature and the player has `I.CombatSoundsOverhaul`. Pass it a vanilla sound id and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a CSO sound picked for the attack in its place.
+Every NPC, creature and the player has `I.CombatSoundsOverhaul`. Everything it plays, plays on that actor.
+
+### Swapping a vanilla sound
+
+Pass `emit` a vanilla sound id, and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a CSO sound picked for the attack in its place.
 
 ```lua
 local I = require('openmw.interfaces')
@@ -87,19 +91,74 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
   - `volume` and `pitch`. The pitch is random between 0.85 and 1 otherwise.
 - `TAGS` lists the ids CSO answers: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit`, `Heavy Armor Hit` and `Health Damage`, in any case.
 - `pickFile(tag, options)` returns the CSO file `emit` would pick, without playing it.
-- `setDebug(true)` prints every swap the actor makes to `openmw.log`, with:
-  - what caught it,
-  - what the attack was made with, for example `axe 2h`, `staff 2h`, `handToHand`, or `natural` for a creature's own attack,
-  - what it landed on (the armor weight, or the actor's body),
-  - the pitch.
-- Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: `actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })`.
 
-To try it in game, open the console and type `luap` to work on the player, or click an NPC and type `luas` to work on that NPC. Then run `I.CombatSoundsOverhaul.emit('Heavy Armor Hit')`.
+### Playing a sound for a weapon or an armor
+
+`playSwing` and `playHit` play a CSO sound straight away, without a vanilla sound to replace. What they play is chosen from two enums:
+
+- `WEAPON`: `ShortBlade`, `LongBlade`, `LongBladeTwoHanded`, `Blunt`, `BluntTwoHanded` (warhammers), `Staff`, `Spear`, `Axe`, `AxeTwoHanded`, `Thrown`, `Bow`, `Crossbow`, `HandToHand`, and `Natural` for a creature's own attack.
+- `ARMOR`: `Unarmored` (also a creature of flesh), `Light`, `Medium`, `Heavy`, `Metal` for a creature of metal like a Dwemer machine, and `Bone` for skeletons and ghosts.
+
+```lua
+local cso = I.CombatSoundsOverhaul
+
+cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
+cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
+```
+
+- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Bone` has no hits yet.
+- The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
+- An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
+
+### Hearing about a sound before it plays
+
+`addOnPlayHandler(handler)` calls `handler(info)` just before every CSO sound the actor plays. That covers the swaps, `emit`, `playSwing` and `playHit`. Handlers run newest first, the same way as `I.Combat.addOnHitHandler`. Add yours from a script attached after this one.
+
+`info` holds:
+
+- `file`, `volume` and `pitch`: what is about to play. The handler can change any of them.
+- `kind`: `'swing'` or `'hit'`.
+- `tag`: the vanilla sound id it answers, or `nil` from `playSwing` and `playHit`.
+- `weapon`: one of `WEAPON`, or `nil` if unknown.
+- `armor`: one of `ARMOR`, for a hit.
+- `layered`: `true` when it plays on top of the vanilla body hit, rather than in place of a vanilla sound.
+- `via`: what set it off. This is `release`, `early release`, `text key`, `hit`, `unarmored hit`, `emit`, `event`, `playSwing` or `playHit`.
+
+Returning `false` stops the sound and skips the older handlers. A vanilla sound CSO was replacing stays stopped either way.
+
+```lua
+I.CombatSoundsOverhaul.addOnPlayHandler(function(info)
+    if info.kind == 'hit' and info.weapon == I.CombatSoundsOverhaul.WEAPON.HandToHand then
+        info.volume = info.volume * 0.5 -- softer punches
+    end
+    if info.file:find('hit69') then return false end -- never this one
+end)
+```
+
+### From other scripts
+
+Scripts that can't reach the actor's interface, such as global scripts, can send the actor an event:
+
+- `CombatSoundsOverhaul_Emit`: `{ tag = 'SwishL' }`, plus any of `emit`'s options.
+- `CombatSoundsOverhaul_PlaySwing`: `{ weapon = ..., volume = ... }`.
+- `CombatSoundsOverhaul_PlayHit`: `{ armor = ..., volume = ..., weapon = ... }`.
+
+### Debugging
+
+`setDebug(true)` prints every CSO sound the actor plays to `openmw.log`, with:
+
+- what set it off,
+- what the attack was made with, for example `axe 2h`, `staff 2h`, `handToHand`, or `natural` for a creature's own attack,
+- what it landed on: the armor weight, or the actor's body,
+- the pitch,
+- whether a play handler stopped it.
+
+To try it in game, open the console and type `luap` to work on the player, or click an NPC and type `luas` to work on that NPC. Then run `I.CombatSoundsOverhaul.emit('Heavy Armor Hit')` or `I.CombatSoundsOverhaul.playSwing('Staff', 1)`.
 
 <!-- nexus-skip-section -->
 ## Working on the mod
 
-The script can be exercised without starting the game. `tools/tests/` stubs the OpenMW Lua API and drives the script through swings, early releases, creature swish keys, armored and unarmored hits, the sounds each weapon and body draws from, and the interface:
+The script can be exercised without starting the game. `tools/tests/` stubs the OpenMW Lua API and drives the script through swings, early releases, creature swish keys, armored and unarmored hits, the sounds each weapon and body draws from, the interface and its play handlers:
 
 ```sh
 luajit tools/tests/test.lua

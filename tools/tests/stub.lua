@@ -116,6 +116,29 @@ M.packages = {
             end
         end,
     },
+    ['openmw.util'] = {
+        makeStrictReadOnly = function(t)
+            return setmetatable({}, {
+                __index = function(_, k)
+                    local v = t[k]
+                    if v == nil then error('Key not found: ' .. tostring(k), 2) end
+                    return v
+                end,
+                __newindex = function() error('Table is read only', 2) end,
+            })
+        end,
+    },
+    ['openmw_aux.util'] = {
+        -- as in resources/vfs/openmw_aux/util.lua: newest first, true once a handler returns false
+        callEventHandlers = function(handlers, ...)
+            if handlers then
+                for i = #handlers, 1, -1 do
+                    if handlers[i](...) == false then return true end
+                end
+            end
+            return false
+        end,
+    },
     ['openmw.interfaces'] = {
         AnimationController = {
             addPlayBlendedAnimationHandler = function(fn) M.playBlendedHandlers[#M.playBlendedHandlers + 1] = fn end,

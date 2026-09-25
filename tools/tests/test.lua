@@ -448,6 +448,102 @@ line = logged(function() api.emit('Medium Armor Hit') end)
 check(line:find('(emit, medium armor, pitch ', 1, true) ~= nil, 'emit of an armor hit knows its armor')
 api.setDebug(false)
 
+print('\n== playSwing and playHit ==')
+local WEAPON, ARMOR = api.WEAPON, api.ARMOR
+check(WEAPON.AxeTwoHanded == 'AxeTwoHanded' and ARMOR.Heavy == 'Heavy', 'WEAPON and ARMOR are enums of names')
+check(not pcall(function() return WEAPON.Swrod end), 'a misspelled enum name is an error')
+stub.reset()
+local f = api.playSwing(WEAPON.ShortBlade, 0.5)
+local played = stub.filesPlayed[1]
+check(inSet(expected('swing', { 'sharpMetal' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
+check(played.options.volume == 0.5 and played.options.pitch >= 0.85 and played.options.pitch <= 1.0,
+    'at the volume given and a random pitch')
+check(#stub.stopped == 0, 'and stops nothing')
+stub.reset()
+api.playSwing(WEAPON.Staff)
+check(stub.filesPlayed[1].options.volume == 1, 'volume is 1 when not given')
+check(api.playSwing(WEAPON.Natural) == nil and api.playSwing(WEAPON.Bow) == nil, 'weapons with no swings play nothing')
+check(not pcall(api.playSwing, 'Swrod') and not pcall(api.playSwing, WEAPON.Axe, -1)
+    and not pcall(api.playSwing, WEAPON.Axe, 'loud'), 'an unknown weapon or a bad volume is an error')
+local hitCases = {
+    { ARMOR.Heavy, nil, { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { ARMOR.Medium, WEAPON.ShortBlade, { 'armorFlesh', 'armorStab' } },
+    { ARMOR.Light, WEAPON.HandToHand, { 'punchyFlesh', 'flesh' } },
+    { ARMOR.Unarmored, WEAPON.Blunt, { 'crunchyFlesh', 'punchyFlesh' } },
+    { ARMOR.Metal, WEAPON.LongBlade, { 'armorHeavy', 'armorHeavyBlade' } },
+    { ARMOR.Metal, nil, { 'armorHeavy' } },
+}
+for _, c in ipairs(hitCases) do
+    local seen = {}
+    for _ = 1, 2000 do seen[api.playHit(c[1], 0.7, c[2])] = true end
+    check(sameSet(seen, expected('hit', c[3])), string.format('playHit %s by %s: %s', c[1], c[2] or 'anything',
+        table.concat(c[3], ' + ')))
+end
+stub.reset()
+api.playHit(ARMOR.Light, 0.3)
+check(stub.filesPlayed[1].options.volume == 0.3 and #stub.stopped == 0, 'playHit plays at the volume given, stopping nothing')
+check(api.playHit(ARMOR.Bone) == nil, 'bone has no hits yet')
+check(not pcall(api.playHit, 'Chainmail') and not pcall(api.playHit, ARMOR.Heavy, 1, 'Swrod'),
+    'an unknown armor or weapon is an error')
+stub.reset()
+script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9 })
+script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear })
+check(inSet(expected('swing', { 'heavyMetalGeneric' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
+    and inSet(expected('hit', { 'armorFlesh', 'armorStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
+    'the PlaySwing and PlayHit events do the same')
+
+print('\n== play handlers ==')
+-- A fresh copy, so the handlers added here don't stay on the main one
+local h = loadScript(true)
+local cso = h.interface
+local seen = {}
+cso.addOnPlayHandler(function(info) seen[#seen + 1] = info end)
+stub.reset()
+stub.rightHand = SWORD
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+local info = seen[1]
+check(info and info.kind == 'swing' and info.tag == 'Weapon Swish' and info.weapon == 'LongBlade' and info.armor == nil
+    and info.via == 'release' and info.layered == false and info.file == lastFile(), 'a handler hears about a swing before it plays')
+seen = {}
+stub.reset()
+stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand') })
+stub.enginePlays('Health Damage')
+stub.enginePlays('Heavy Armor Hit')
+h.engineHandlers.onUpdate(0.016)
+info = seen[1]
+check(info and info.kind == 'hit' and info.tag == 'Heavy Armor Hit' and info.weapon == 'AxeTwoHanded' and info.armor == 'Heavy'
+    and info.via == 'hit' and info.layered == false, 'and about a hit, with the weapon and armor')
+seen = {}
+stub.reset()
+stub.hit({ successful = true, damage = { health = 5 }, attacker = npc })
+stub.enginePlays('Health Damage')
+h.engineHandlers.onUpdate(0.016)
+info = seen[1]
+check(info and info.tag == 'Health Damage' and info.armor == 'Unarmored' and info.weapon == 'HandToHand' and info.layered == true,
+    'a layer over the body hit says so')
+seen = {}
+cso.playHit(cso.ARMOR.Metal, 0.6)
+check(seen[1] and seen[1].tag == nil and seen[1].via == 'playHit' and seen[1].armor == 'Metal' and seen[1].volume == 0.6,
+    'playHit goes through the handlers too')
+cso.addOnPlayHandler(function(i) i.file = 'sound/custom.wav'; i.volume = 0.25; i.pitch = 1.5 end)
+stub.reset()
+cso.emit('Medium Armor Hit')
+check(lastFile() == 'sound/custom.wav' and stub.filesPlayed[1].options.volume == 0.25 and stub.filesPlayed[1].options.pitch == 1.5,
+    'a handler can change the file, volume and pitch')
+cso.addOnPlayHandler(function() return false end) -- the newest handler now stops everything
+seen = {}
+stub.reset()
+stub.enginePlays('Heavy Armor Hit')
+check(cso.emit('Heavy Armor Hit') == nil and #stub.filesPlayed == 0, 'a handler returning false stops the sound')
+check(stub.stopped[1] == 'Heavy Armor Hit' and stub.playing['heavy armor hit'] == nil, 'the vanilla sound stays stopped')
+check(#seen == 0, 'and the older handlers are skipped')
+check(not pcall(cso.addOnPlayHandler, 'nope'), 'a handler has to be a function')
+-- back to the main copy for what follows
+script = loadScript(true)
+api, onUpdate = script.interface, script.engineHandlers.onUpdate
+
 print('\n== unarmored layer switched off ==')
 local muted = loadScript(false)
 stub.reset()
