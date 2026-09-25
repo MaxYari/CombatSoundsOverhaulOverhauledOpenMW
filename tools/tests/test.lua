@@ -282,7 +282,7 @@ local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBlade', 'metal' }, folder = 'swing' },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'heavyMetal', 'heavyMetalGeneric' }, folder = 'swing' },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'heavyMetal', 'heavyMetalGeneric', 'metal' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'heavyMetalGeneric' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
