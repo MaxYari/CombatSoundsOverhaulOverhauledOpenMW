@@ -302,9 +302,11 @@ check(rings / withHit > 0.25 and rings / withHit < 0.35,
     string.format('and rings on top of 30%% of its hits (%.3f)', rings / withHit))
 armorHit('Light Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
     weapon = W('ShortBladeOneHand') })
-check(stub.stopped[1] == 'Light Armor Hit' and #stub.filesPlayed == 1
-    and inSet(expected('hit', { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' }), lastFile()),
-    'light armor is swapped for the flesh sounds of the weapon, alone')
+local lightHit = roles()
+check(stub.stopped[1] == 'Light Armor Hit' and #lightHit.main == 1 and #lightHit.under == 0
+    and inSet(expected('hit', { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' }), lightHit.main[1].file)
+    and (#lightHit.rings == 0 or (#lightHit.rings == 1 and lightHit.rings[1].category == 'cutPure')),
+    'light armor is swapped for the flesh sounds of the weapon, with no flesh under it, maybe a pure cut on top')
 
 print('\n== hits on no armor ==')
 for _, hand in ipairs({ SWORD, false }) do
@@ -498,7 +500,7 @@ for _ = 1, 400 do
 end
 check(sameSet(rangedBone, expected('hit', { 'cutPure', 'BoneHit' })), 'but only a melee attack counts as a thrust')
 bodyHit(0, W('BluntOneHand'))
-check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), lastFile()), 'blood is flesh')
+check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), stub.filesPlayed[1].file), 'blood is flesh')
 -- An armored actor that doesn't bleed has no flesh under its armor, so the armor hit always plays
 stub.bloodType = 1
 local undead = loadScript(true)
@@ -805,6 +807,67 @@ stub.enginePlays('Heavy Armor Hit')
 muted.engineHandlers.onUpdate(0.016)
 check(#stub.filesPlayed >= 1 and isHit(stub.filesPlayed[1].file), 'armor hits are still swapped')
 check(inSet(DEFAULT_FLESH, muted.interface.emit('Health Damage')), 'emit Health Damage still plays the layer')
+
+print('\n== pure cuts and stabs over flesh ==')
+-- the muted copy has the engine hooks now
+script = loadScript(true)
+api, onUpdate = script.interface, script.engineHandlers.onUpdate
+-- How often each layer came up over `runs` hits on flesh, and whether a pure one was ever the hit itself
+local function fleshLayers(weapon, attackType, runs)
+    local counts, pureMain = {}, false
+    for _ = 1, runs do
+        stub.reset()
+        api.playHit(ARMOR.Unarmored, 1, weapon, attackType)
+        for _, i in ipairs(stub.infos) do
+            if i.layered then counts[i.category] = (counts[i.category] or 0) + 1
+            elseif i.category == 'cutPure' or i.category == 'stabPure' then pureMain = true end
+        end
+    end
+    return counts, pureMain
+end
+for _, c in ipairs({
+    { WEAPON.ShortBlade, nil, 'cutPure', 'a dagger' }, { WEAPON.LongBlade, nil, 'cutPure', 'a longsword' },
+    { WEAPON.LongBladeTwoHanded, nil, 'cutPure', 'a claymore' }, { WEAPON.AxeTwoHanded, nil, 'cutPure', 'a battle axe' },
+    { WEAPON.ShortBlade, THRUST, 'stabPure', 'a dagger thrust' }, { WEAPON.LongBlade, THRUST, 'stabPure', 'a longsword thrust' },
+    { WEAPON.Spear, THRUST, 'stabPure', 'a spear thrust' }, { WEAPON.Thrown, nil, 'stabPure', 'a throwing knife' },
+    { WEAPON.Bow, nil, 'stabPure', 'an arrow' }, { WEAPON.Crossbow, nil, 'stabPure', 'a bolt' },
+    { WEAPON.Blunt, nil, 'BluntHitPure', 'a mace' }, { WEAPON.BluntTwoHanded, nil, 'BluntHitPure', 'a warhammer' },
+    { WEAPON.Staff, nil, 'BluntHitPure', 'a staff' },
+}) do
+    local runs = 3000
+    local counts, pureMain = fleshLayers(c[1], c[2], runs)
+    local rate = (counts[c[3]] or 0) / runs
+    local others = 0
+    for category, n in pairs(counts) do if category ~= c[3] then others = others + n end end
+    check(rate > 0.61 and rate < 0.71 and others == 0 and not pureMain,
+        string.format('%s on flesh gets a %s on top %.3f of the time, and nothing else on top', c[4], c[3], rate))
+end
+for _, c in ipairs({
+    { WEAPON.HandToHand, nil, 'a fist' }, { WEAPON.Spear, CHOP, 'a spear chop' }, { WEAPON.Natural, nil, 'claws' }, { nil, nil, 'nothing in particular' },
+}) do
+    local counts, pureMain = fleshLayers(c[1], c[2], 500)
+    check(next(counts) == nil and not pureMain, c[3] .. ' on flesh gets no pure layer')
+end
+local pureOnArmor, armorRuns = false, 0
+for _ = 1, 1000 do
+    armorHit('Heavy Armor Hit', { successful = true, damage = { health = 10 }, attacker = npc,
+        weapon = W('LongBladeOneHand'), type = CHOP, sourceType = 'melee' })
+    for _, i in ipairs(stub.infos) do pureOnArmor = pureOnArmor or i.category == 'cutPure' end
+    if stub.infos[1] and stub.infos[1].armor == 'Heavy' then armorRuns = armorRuns + 1 end
+end
+check(armorRuns == 1000 and not pureOnArmor, 'the flesh under an armor hit never brings a pure cut with it')
+local fromHit = nil
+for _ = 1, 50 do
+    stub.reset()
+    stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeOneHand'), type = CHOP,
+        sourceType = 'melee' })
+    stub.enginePlays('Health Damage')
+    onUpdate(0.016)
+    fromHit = stub.infos[2]
+    if fromHit then break end
+end
+check(fromHit and fromHit.category == 'cutPure' and fromHit.layered and fromHit.via == 'unarmored hit'
+    and #stub.filesPlayed == 2, 'a real hit on an unarmored spot gets it too')
 
 print('\n== vanilla whooshes for fists ==')
 local fists = loadScript(true)

@@ -65,9 +65,9 @@ local HIT_CATEGORIES = {
     FleshHit = { { 1, 10 } },
     metallicPunchyFleshHit = { { 25, 29 } },
     FleshSlice = { { 61, 64 } },
-    FleshStab = { { 65, 68 }, 70, { 73, 76 } },
+    FleshStab = { { 66, 68 }, 70, { 73, 76 } },
     -- bone
-    stabPure = { 77, 78 },
+    stabPure = { 65, 77, 78 },
     cutPure = { { 11, 17 } },
     BoneHit = { 79 },
     -- armor
@@ -76,7 +76,8 @@ local HIT_CATEGORIES = {
     BluntRingPure = { 69 },
     RingingBladePure = { { 18, 21 }, 30 },
     armorHeavyBladePureHit = { { 22, 24 }, 31, 32, { 57, 60 }, 96 },
-    armorHeavyBluntPureHit = { { 33, 40 }, { 82, 95 }, { 97, 102 } },
+    armorHeavyBluntPureHit = { { 33, 40 }, 84, 85, { 87, 95 }, { 97, 102 } },
+    BluntHitPure = { 82, 83, 86 },
 }
 
 -- Which categories answer an attack, by what it's made with: a weaponKind family with its hands (longBlade1), or
@@ -103,16 +104,19 @@ local BUILTIN_CATEGORIES = {
 -- An unarmored spot, light armor, a creature of flesh and blood, and the flesh under medium and heavy armor. The
 -- flesh stabs are only for thrusts, and metallicPunchyFleshHit is for everything but arrows and fists.
 local FLESH_HIT_SOUNDS = {
-    shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit' },
-    shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
-    longBlade = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit' }, -- cuts and thrusts alike
-    spearThrust = { 'FleshStab', 'metallicPunchyFleshHit' },
-    blunt = { 'metallicPunchyFleshHit' },
-    thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' },
-    bow = { 'FleshStab', 'FleshHit' },
-    crossbow = { 'FleshStab', 'FleshHit' },
+    shortBlade = { 'FleshSlice', 'FleshHit', 'metallicPunchyFleshHit', 'cutPure' },
+    shortBladeThrust = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit', 'stabPure' },
+    longBlade = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit', 'cutPure' },
+    longBladeThrust = { 'FleshHit', 'FleshStab', 'metallicPunchyFleshHit', 'stabPure' },
+    spearThrust = { 'FleshStab', 'metallicPunchyFleshHit', 'stabPure' },
+    axe = { 'FleshHit', 'metallicPunchyFleshHit', 'cutPure' },
+    blunt = { 'metallicPunchyFleshHit', 'BluntHitPure' },
+    staff = { 'FleshHit', 'metallicPunchyFleshHit', 'BluntHitPure' },
+    thrown = { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit', 'stabPure' },
+    bow = { 'FleshStab', 'FleshHit', 'stabPure' },
+    crossbow = { 'FleshStab', 'FleshHit', 'stabPure' },
     handToHand = { 'FleshHit' },
-    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- axes, staves, spears' swings, creatures' own attacks
+    default = { 'FleshHit', 'metallicPunchyFleshHit' }, -- spears' swings, creatures' own attacks
 }
 -- Medium and heavy armor: the pure armor hits, and metallicPunchyFleshHit for everything but arrows and fists. On a
 -- living actor the weapon's flesh sound plays under a pure hit; the metallic punchy one has flesh in it already.
@@ -179,6 +183,15 @@ local HIT_LAYER_CHANCES = {
     RingingBladePure = 0.3,
     BluntRingPure = 0.3,
 }
+-- The same, only where FLESH_HIT_SOUNDS lists them: a pure cut, stab or blunt hit over the flesh hit. On bone and
+-- ghosts the cut and stab are the hit itself.
+local FLESH_LAYER_CHANCES = {
+    cutPure = 0.66,
+    stabPure = 0.66,
+    BluntHitPure = 0.66,
+}
+-- *_SOUNDS table -> layers of its own, on top of HIT_LAYER_CHANCES
+local LAYERS_OF_TABLE = { [FLESH_HIT_SOUNDS] = FLESH_LAYER_CHANCES }
 -- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
 -- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
 local FLESH_UNDER = { medium = true, heavy = true }
@@ -463,16 +476,23 @@ local function landsOn(tag)
     return armor
 end
 
--- A random file from the categories the given *_SOUNDS tables give an attack made with `weapon`, or nil when none
--- answers. force draws from the whole folder then.
--- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers
+-- How often a category plays as a layer where this *_SOUNDS table lists it, or nil when it joins the draw
+local function layerChance(folder, soundsTable, category)
+    if folder ~= 'hit' then return nil end
+    local own = LAYERS_OF_TABLE[soundsTable]
+    return own and own[category] or HIT_LAYER_CHANCES[category]
+end
+
+-- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers as
+-- { category = ..., chance = ... }
 local function categoriesFor(folder, soundsTables, weapon, attackType)
     local drawn, layers = nil, nil
     for _, soundsTable in ipairs(soundsTables or {}) do
         for _, category in ipairs(lookup(soundsTable, weapon, attackType) or {}) do
-            if folder == 'hit' and HIT_LAYER_CHANCES[category] then
+            local chance = layerChance(folder, soundsTable, category)
+            if chance then
                 layers = layers or {}
-                layers[#layers + 1] = category
+                layers[#layers + 1] = { category = category, chance = chance }
             else
                 drawn = drawn or {}
                 drawn[#drawn + 1] = category
@@ -503,9 +523,9 @@ end
 local function rollLayers(folder, soundsTables, weapon, attackType)
     local _, layers = categoriesFor(folder, soundsTables, weapon, attackType)
     local rolled = {}
-    for _, category in ipairs(layers or {}) do
-        if math.random() < HIT_LAYER_CHANCES[category] then
-            rolled[#rolled + 1] = drawFrom(folder, { category })
+    for _, layer in ipairs(layers or {}) do
+        if math.random() < layer.chance then
+            rolled[#rolled + 1] = drawFrom(folder, { layer.category })
         end
     end
     return rolled

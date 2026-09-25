@@ -56,6 +56,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
   - Blunt weapons: metallic punchy impacts.
   - Fists: flesh impacts.
   - Arrows and bolts: stabs and flesh impacts.
+  - On top of those, two times in three, a pure sound for the weapon: a cut for blades and axes, a stab for a thrust and for arrows, bolts and thrown weapons, and a blunt hit for maces, warhammers and staves. Fists, spears' swings and claws get none.
 - Medium and heavy armor: a pure armor impact for the weapon (heavy armor has one set for blades and one for blunt weapons), or a thrust's pure stab. Everything but fists and arrows can also draw a metallic punchy impact instead.
   - Under a pure impact, the wearer's flesh sound for the weapon always plays, at full volume. The pure impact itself plays three times out of four.
   - A metallic punchy impact already has flesh in it, so it plays alone.
@@ -64,7 +65,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 - Skeletons, liches and bonelords: pure cuts, or pure stabs for a thrust, with bone hits among them. Blunt weapons add blunt bone hits.
 - Ghosts, spectres and spirits: pure cuts, or pure stabs for a thrust. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
 
-When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The rings are the exception: they're separate layers with a chance of their own.
+When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The rings, and the pure sounds on top of flesh, are the exception: they're separate layers with a chance of their own.
 
 A thrust only counts as one for a melee attack made with a weapon.
 
