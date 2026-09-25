@@ -186,9 +186,9 @@ local HIT_LAYER_CHANCES = {
 -- The same, only where FLESH_HIT_SOUNDS lists them: a pure cut, stab or blunt hit over the flesh hit. On bone and
 -- ghosts the cut and stab are the hit itself.
 local FLESH_LAYER_CHANCES = {
-    cutPure = 0.66,
-    stabPure = 0.66,
-    BluntHitPure = 0.66,
+    cutPure = 0.33,
+    stabPure = 0.33,
+    BluntHitPure = 0.33,
 }
 -- *_SOUNDS table -> layers of its own, on top of HIT_LAYER_CHANCES
 local LAYERS_OF_TABLE = { [FLESH_HIT_SOUNDS] = FLESH_LAYER_CHANCES }

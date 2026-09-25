@@ -839,7 +839,7 @@ for _, c in ipairs({
     local rate = (counts[c[3]] or 0) / runs
     local others = 0
     for category, n in pairs(counts) do if category ~= c[3] then others = others + n end end
-    check(rate > 0.61 and rate < 0.71 and others == 0 and not pureMain,
+    check(rate > 0.28 and rate < 0.38 and others == 0 and not pureMain,
         string.format('%s on flesh gets a %s on top %.3f of the time, and nothing else on top', c[4], c[3], rate))
 end
 for _, c in ipairs({

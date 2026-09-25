@@ -56,7 +56,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
   - Blunt weapons: metallic punchy impacts.
   - Fists: flesh impacts.
   - Arrows and bolts: stabs and flesh impacts.
-  - On top of those, two times in three, a pure sound for the weapon: a cut for blades and axes, a stab for a thrust and for arrows, bolts and thrown weapons, and a blunt hit for maces, warhammers and staves. Fists, spears' swings and claws get none.
+  - On top of those, one time in three, a pure sound for the weapon: a cut for blades and axes, a stab for a thrust and for arrows, bolts and thrown weapons, and a blunt hit for maces, warhammers and staves. Fists, spears' swings and claws get none.
 - Medium and heavy armor: a pure armor impact for the weapon (heavy armor has one set for blades and one for blunt weapons), or a thrust's pure stab. Everything but fists and arrows can also draw a metallic punchy impact instead.
   - Under a pure impact, the wearer's flesh sound for the weapon always plays, at full volume. The pure impact itself plays three times out of four.
   - A metallic punchy impact already has flesh in it, so it plays alone.
