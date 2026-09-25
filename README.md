@@ -38,10 +38,9 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Hits, by what they land on:**
 
-- Heavy armor: heavy armor impacts, with a ringing blade impact added for blades.
-- Medium armor: armor impacts.
+- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
-- Dwemer machines count as heavy armor. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
+- Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
 
 ## The body hit sound
 
@@ -58,7 +57,7 @@ Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\
 - Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
 - The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders and sorting them into groups by the number in their names. A few are left out:
   - `Swing6`, a near copy of `Swing5`.
-  - `Hit41` to `Hit56`, `Hit69`, `Hit71`, `Hit80` and `Hit81`, armor impacts with flesh in them.
+  - `Hit18` to `Hit21`, `Hit30` to `Hit32` and `Hit57` to `Hit60`, plain armor clanks. The plain heavy clanks only play on Dwemer machines.
   - `Hit68`, `Hit97` and `Hit98`, which aren't sorted yet.
 - Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
 

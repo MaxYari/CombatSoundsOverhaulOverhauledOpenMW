@@ -62,6 +62,9 @@ local HITS = {
         for _, r in ipairs({ range(33, 40), range(82, 95), range(99, 102) }) do for _, n in ipairs(r) do t[#t + 1] = n end end
         return t end)(),
     armorHeavyBlade = { 96 },
+    armorFlesh = (function() local t = range(41, 56); t[#t + 1] = 71; return t end)(),
+    armorCrunchyFlesh = { 80, 81 },
+    armorStab = { 69 },
 }
 -- The set of paths a list of categories should draw from (Swing6 is left out as a near copy of Swing5)
 local function expected(folder, categories)
@@ -99,6 +102,7 @@ local W = function(typeName) return stub.weapon('w', typeName) end
 local SWORD = W('LongBladeOneHand')
 local SWORD_SWINGS = expected('swing', { 'ringingBlade', 'metal' })
 local DEFAULT_FLESH = expected('hit', { 'flesh', 'punchyFlesh' })
+local DEFAULT_ARMOR = expected('hit', { 'armorFlesh', 'armorCrunchyFlesh' })
 
 print('\n== loading ==')
 check(script.interfaceName == 'CombatSoundsOverhaul', 'provides I.CombatSoundsOverhaul')
@@ -210,12 +214,12 @@ for _, hand in ipairs({ SWORD, false }) do
     armorHit('Medium Armor Hit')
     local label = hand and 'armed' or 'unarmed'
     check(stub.stopped[1] == 'Medium Armor Hit' and #stub.filesPlayed == 1
-        and inSet(expected('hit', { 'armor' }), lastFile()), 'medium armor gets an armor hit (' .. label .. ' defender)')
+        and inSet(DEFAULT_ARMOR, lastFile()), 'medium armor gets a fleshy armor hit (' .. label .. ' defender)')
     check(stub.playing['health damage'] == true, 'Health Damage keeps playing on top (' .. label .. ')')
 end
 armorHit('Heavy Armor Hit')
-check(stub.stopped[1] == 'Heavy Armor Hit' and inSet(expected('hit', { 'armorHeavy' }), lastFile()),
-    'heavy armor gets a heavy armor hit')
+check(stub.stopped[1] == 'Heavy Armor Hit' and inSet(DEFAULT_ARMOR, lastFile()),
+    'heavy armor gets a fleshy armor hit too')
 local pitchOk = true
 for _, p in ipairs(stub.filesPlayed) do pitchOk = pitchOk and p.options.pitch >= 0.85 and p.options.pitch <= 1.0 end
 check(pitchOk, 'hits play at a pitch between 0.85 and 1 too')
@@ -303,32 +307,31 @@ local fleshCases = {
 }
 pools('Health Damage', fleshCases)
 pools('Light Armor Hit', { fleshCases[1], fleshCases[4], fleshCases[7] })
-pools('Medium Armor Hit', {
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'armor' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'armor' } },
-    { label = 'claws', attacker = creature, categories = { 'armor' } },
-})
-pools('Heavy Armor Hit', {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorHeavy', 'armorHeavyBlade' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'armorHeavy', 'armorHeavyBlade' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'armorHeavy' } },
-    { label = 'claws', attacker = creature, categories = { 'armorHeavy' } },
-})
--- armorFlesh, armorCrunchyFlesh and armorStab have flesh in them and aren't used; 68, 97 and 98 aren't sorted
+local armorCases = {
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { label = 'claws', attacker = creature, categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+}
+pools('Medium Armor Hit', armorCases)
+pools('Heavy Armor Hit', armorCases)
+-- The plain clanks (armor, armorHeavy, armorHeavyBlade) are left to dwemer machines; 68, 97 and 98 aren't sorted
 local heard = {}
 for _, tag in ipairs({ 'Health Damage', 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit' }) do
     for _, c in ipairs(fleshCases) do
         for f in pairs(draws(tag, { weapon = c.weapon and W(c.weapon), attacker = c.attacker })) do heard[f] = true end
     end
 end
-local leaked = {}
-for n = 41, 56 do leaked[#leaked + 1] = n end
-for _, n in ipairs({ 71, 80, 81, 69, 68, 97, 98 }) do leaked[#leaked + 1] = n end
+local leaked = { 68, 97, 98, 96 }
+for _, category in ipairs({ 'armor', 'armorHeavy' }) do
+    for _, n in ipairs(HITS[category]) do leaked[#leaked + 1] = n end
+end
 local played = {}
 for _, n in ipairs(leaked) do
     if heard[string.format('sound/fx/item/csohit/hit%d.wav', n)] then played[#played + 1] = n end
 end
-check(#played == 0, 'the fleshy armor hits and the unsorted ones never play' ..
+check(#played == 0, 'the plain armor clanks and the unsorted ones never play on armor or flesh' ..
     (#played > 0 and (' (played: ' .. table.concat(played, ', ') .. ')') or ''))
 
 print('\n== bodies ==')
@@ -359,7 +362,7 @@ api, onUpdate = script.interface, script.engineHandlers.onUpdate
 print('\n== the interface ==')
 stub.reset()
 stub.rightHand = nil
-check(inSet(expected('hit', { 'armorHeavy' }), api.emit('Heavy Armor Hit')), 'emit plays a CSO hit for an armor tag')
+check(inSet(DEFAULT_ARMOR, api.emit('Heavy Armor Hit')), 'emit plays a CSO hit for an armor tag')
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
 check(inSet(expected('swing', { 'plain' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')

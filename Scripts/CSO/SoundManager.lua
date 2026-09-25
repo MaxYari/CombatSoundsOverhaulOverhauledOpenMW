@@ -98,11 +98,15 @@ local FLESH_HIT_SOUNDS = {
     handToHand = { 'punchyFlesh', 'flesh' },
     default = { 'flesh', 'punchyFlesh' }, -- axes, staves, thrown weapons, arrows, creatures' own attacks
 }
-local MEDIUM_ARMOR_HIT_SOUNDS = {
-    default = { 'armor' },
+-- Medium and heavy armor: an armor hit only takes health once it's through, so only the armor hits with flesh or
+-- crunch in them. The plain clanks (armor, armorHeavy) would sound like the blow was stopped.
+local FLESHY_ARMOR_HIT_SOUNDS = {
+    shortBlade = { 'armorFlesh', 'armorStab' },
+    spear = { 'armorFlesh', 'armorStab' },
+    default = { 'armorFlesh', 'armorCrunchyFlesh' },
 }
--- Heavy armor, or a creature of metal
-local HEAVY_ARMOR_HIT_SOUNDS = {
+-- A creature of metal, which doesn't bleed
+local METAL_BODY_HIT_SOUNDS = {
     shortBlade = { 'armorHeavy', 'armorHeavyBlade' },
     longBlade = { 'armorHeavy', 'armorHeavyBlade' },
     default = { 'armorHeavy' },
@@ -111,10 +115,10 @@ local HEAVY_ARMOR_HIT_SOUNDS = {
 -- only the body hit.
 local HIT_SOUNDS = {
     light = FLESH_HIT_SOUNDS,
-    medium = MEDIUM_ARMOR_HIT_SOUNDS,
-    heavy = HEAVY_ARMOR_HIT_SOUNDS,
+    medium = FLESHY_ARMOR_HIT_SOUNDS,
+    heavy = FLESHY_ARMOR_HIT_SOUNDS,
     flesh = FLESH_HIT_SOUNDS,
-    metal = HEAVY_ARMOR_HIT_SOUNDS,
+    metal = METAL_BODY_HIT_SOUNDS,
 }
 -- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the CSO layer starts with it and
 -- drowns it out. emit('Health Damage') plays the layer either way.

@@ -45,10 +45,9 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 [b]Hits, by what they land on:[/b]
 
 [list]
-[*]Heavy armor: heavy armor impacts, with a ringing blade impact added for blades.
-[*]Medium armor: armor impacts.
+[*]Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
 [*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
-[*]Dwemer machines count as heavy armor. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
+[*]Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
 [/list]
 
 [size=5][b]The body hit sound[/b][/size]
@@ -70,7 +69,7 @@ Every hit that takes health also plays the body hit, "Health Damage" ([font=Cour
 [*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders and sorting them into groups by the number in their names. A few are left out:
 [list]
 [*][font=Courier New]Swing6[/font], a near copy of [font=Courier New]Swing5[/font].
-[*][font=Courier New]Hit41[/font] to [font=Courier New]Hit56[/font], [font=Courier New]Hit69[/font], [font=Courier New]Hit71[/font], [font=Courier New]Hit80[/font] and [font=Courier New]Hit81[/font], armor impacts with flesh in them.
+[*][font=Courier New]Hit18[/font] to [font=Courier New]Hit21[/font], [font=Courier New]Hit30[/font] to [font=Courier New]Hit32[/font] and [font=Courier New]Hit57[/font] to [font=Courier New]Hit60[/font], plain armor clanks. The plain heavy clanks only play on Dwemer machines.
 [*][font=Courier New]Hit68[/font], [font=Courier New]Hit97[/font] and [font=Courier New]Hit98[/font], which aren't sorted yet.
 [/list]
 [*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
