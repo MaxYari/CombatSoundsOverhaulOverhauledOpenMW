@@ -51,7 +51,7 @@ local onUpdate = script.engineHandlers.onUpdate
 -- The categories as they were sorted by ear, written out again so the script's tables are checked against them.
 local function range(a, b) local t = {} for n = a, b do t[#t + 1] = n end return t end
 local SWINGS = {
-    plain = range(21, 23), sharpMetal = range(1, 6), metal = range(10, 16), ringingBlade = range(24, 26),
+    plain = range(21, 23), sharpMetal = range(1, 6), metal = range(11, 16), ringingBlade = range(24, 26),
     heavyMetal = range(7, 10), heavyMetalGeneric = range(17, 20),
 }
 local HITS = {

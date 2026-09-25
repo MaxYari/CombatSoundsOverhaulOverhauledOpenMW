@@ -28,9 +28,9 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 **Swings, by weapon:**
 
 - Short blades: sharp metallic whooshes.
-- One-handed long blades: ringing blade whooshes and generic metallic ones.
+- One-handed long blades: ringing blade whooshes and metallic blade ones.
 - Maces and one-handed axes: heavy metallic whooshes.
-- Two-handed swords: generic heavy metallic whooshes and generic metallic ones.
+- Two-handed swords: generic heavy metallic whooshes and metallic blade ones.
 - Warhammers and battle axes: heavy metallic whooshes, plus the more generic heavy ones.
 - Spears: generic heavy metallic whooshes.
 - Staves: plain, metallic and generic heavy whooshes.
