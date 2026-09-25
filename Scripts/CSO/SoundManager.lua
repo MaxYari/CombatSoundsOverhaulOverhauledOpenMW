@@ -126,15 +126,18 @@ local METAL_BODY_HIT_SOUNDS = {
     longBlade = { 'armorHeavy', 'armorHeavyBlade' },
     default = { 'armorHeavy' },
 }
--- What the hit lands on -> the table above that answers it. Ghosts have no sounds yet, so they keep only the body hit.
+-- What the hit lands on -> the tables above that answer it; an attack draws from what each of them gives it. Medium
+-- and heavy armor get the flesh sounds of the weapon as well as the armor ones. Ghosts have no sounds yet, so they
+-- keep only the body hit.
 local HIT_SOUNDS = {
-    light = FLESH_HIT_SOUNDS,
-    medium = FLESHY_ARMOR_HIT_SOUNDS,
-    heavy = FLESHY_ARMOR_HIT_SOUNDS,
-    flesh = FLESH_HIT_SOUNDS,
-    metal = METAL_BODY_HIT_SOUNDS,
-    bone = BONE_HIT_SOUNDS,
+    light = { FLESH_HIT_SOUNDS },
+    medium = { FLESHY_ARMOR_HIT_SOUNDS, FLESH_HIT_SOUNDS },
+    heavy = { FLESHY_ARMOR_HIT_SOUNDS, FLESH_HIT_SOUNDS },
+    flesh = { FLESH_HIT_SOUNDS },
+    metal = { METAL_BODY_HIT_SOUNDS },
+    bone = { BONE_HIT_SOUNDS },
 }
+local SWING_TABLES = { SWING_SOUNDS }
 -- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the CSO layer starts with it and
 -- drowns it out. emit('Health Damage') plays the layer either way.
 local LAYER_UNARMORED_HITS = true
@@ -286,7 +289,8 @@ end
 -- the draw once.
 local pools = {}
 local function pool(folder, categories)
-    local list = pools[categories]
+    local key = folder .. ':' .. table.concat(categories, '+')
+    local list = pools[key]
     if not list then
         list = {}
         local added = {}
@@ -298,7 +302,7 @@ local function pool(folder, categories)
                 end
             end
         end
-        pools[categories] = list
+        pools[key] = list
     end
     return list
 end
@@ -371,10 +375,17 @@ local function landsOn(tag)
     return armor
 end
 
--- A random file from the categories a *_SOUNDS table gives an attack made with `weapon`, or nil when none answers.
--- force draws from the whole folder then.
-local function pickFrom(folder, soundsTable, weapon, force, attackType)
-    local categories = lookup(soundsTable, weapon, attackType)
+-- A random file from the categories the given *_SOUNDS tables give an attack made with `weapon`, or nil when none
+-- answers. force draws from the whole folder then.
+local function pickFrom(folder, soundsTables, weapon, force, attackType)
+    local categories = nil
+    for _, soundsTable in ipairs(soundsTables or {}) do
+        local found = lookup(soundsTable, weapon, attackType)
+        if found then
+            categories = categories or {}
+            for _, category in ipairs(found) do categories[#categories + 1] = category end
+        end
+    end
     local list = categories and pool(folder, categories)
     if (not list or #list == 0) and force then list = getFiles()[folder].all end
     if not list or #list == 0 then return nil end
@@ -384,7 +395,7 @@ end
 -- A random CSO file for a vanilla tag and an attack made with `weapon`
 local function pickFor(tag, weapon, force, attackType)
     local folder = TAGS[tag:lower()]
-    if folder == 'swing' then return pickFrom('swing', SWING_SOUNDS, weapon, force, attackType) end
+    if folder == 'swing' then return pickFrom('swing', SWING_TABLES, weapon, force, attackType) end
     if folder then return pickFrom('hit', HIT_SOUNDS[landsOn(tag)], weapon, force, attackType) end
     return nil
 end
@@ -483,7 +494,7 @@ local function playSwing(weapon, volume, attackType)
     local kind = checkWeapon(weapon, 'playSwing')
     volume = checkVolume(volume, 'playSwing')
     attackType = checkAttackType(attackType, 'playSwing')
-    local file = pickFrom('swing', SWING_SOUNDS, kind, nil, attackType)
+    local file = pickFrom('swing', SWING_TABLES, kind, nil, attackType)
     return file and play(file, 'swing', nil, kind, nil, 'playSwing', volume, nil, attackType)
 end
 

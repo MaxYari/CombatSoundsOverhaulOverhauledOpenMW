@@ -38,7 +38,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Hits, by what they land on:**
 
-- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
+- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through, plus the flesh impacts the weapon would get on light armor. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
   - Short blades: slices and flesh impacts.
   - Long blades: flesh impacts.
