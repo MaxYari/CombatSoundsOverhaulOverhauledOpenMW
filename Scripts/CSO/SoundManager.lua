@@ -57,8 +57,7 @@ local SWING_CATEGORIES = {
     sharpMetal = { { 1, 6 } },         -- short blades, daggers
     metal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves
     ringingBlade = { { 24, 26 } },     -- one-handed long blades: like metal, but sharper and with a ring
-    heavyMetal = { { 7, 10 } },        -- maces, axes, probably two-handed swords
-    heavyMetalGeneric = { { 17, 20 } }, -- staves, polearms, spears, maybe two-handed maces, axes and swords
+    heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, axes, polearms, spears, staves
 }
 -- Hit68, Hit97 and Hit98 aren't sorted yet.
 local HIT_CATEGORIES = {
@@ -87,13 +86,11 @@ local HIT_CATEGORIES = {
 local SWING_SOUNDS = {
     shortBlade = { 'sharpMetal' },
     longBlade1 = { 'ringingBlade', 'metal' },
-    longBlade2 = { 'heavyMetalGeneric', 'metal' },
-    blunt1 = { 'heavyMetal' },
-    blunt2 = { 'heavyMetal', 'heavyMetalGeneric' },
-    axe1 = { 'heavyMetal' },
-    axe2 = { 'heavyMetal', 'heavyMetalGeneric' },
-    spear = { 'heavyMetalGeneric' },
-    staff = { 'plain', 'metal', 'heavyMetalGeneric' },
+    longBlade2 = { 'metal' },
+    blunt = { 'heavyMetal' },
+    axe = { 'heavyMetal' },
+    spear = { 'heavyMetal' },
+    staff = { 'plain', 'metal', 'heavyMetal' },
     thrown = { 'sharpMetal', 'plain' },
     handToHand = { 'plain' },
 }

@@ -52,7 +52,7 @@ local onUpdate = script.engineHandlers.onUpdate
 local function range(a, b) local t = {} for n = a, b do t[#t + 1] = n end return t end
 local SWINGS = {
     plain = range(21, 23), sharpMetal = range(1, 6), metal = range(11, 16), ringingBlade = range(24, 26),
-    heavyMetal = range(7, 10), heavyMetalGeneric = range(17, 20),
+    heavyMetal = (function() local t = range(7, 10); for n = 17, 20 do t[#t + 1] = n end; return t end)(),
 }
 local HITS = {
     flesh = range(1, 10), punchyFlesh = range(25, 29), crunchyFlesh = { 72, 79 }, fleshySlice = range(61, 64),
@@ -282,13 +282,13 @@ local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal' }, folder = 'swing' },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBlade', 'metal' }, folder = 'swing' },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'heavyMetalGeneric', 'metal' }, folder = 'swing' },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'metal' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'heavyMetalGeneric' }, folder = 'swing' },
+    { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal', 'heavyMetalGeneric' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'heavyMetalGeneric' }, folder = 'swing' },
-    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'metal', 'heavyMetalGeneric' }, folder = 'swing' },
+    { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'heavyMetal' }, folder = 'swing' },
+    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'metal', 'heavyMetal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
     { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
 })
@@ -557,7 +557,7 @@ check(not pcall(api.emit, 'Heavy Armor Hit', { attackType = 'stab' }) and not pc
 stub.reset()
 script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9 })
 script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
-check(inSet(expected('swing', { 'heavyMetalGeneric' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
+check(inSet(expected('swing', { 'heavyMetal' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
     and inSet(expected('hit', { 'armorFlesh', 'armorStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
     'the PlaySwing and PlayHit events do the same')
 
