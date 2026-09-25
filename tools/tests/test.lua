@@ -105,8 +105,8 @@ local function isHit(f) return f ~= nil and f:find('^sound/fx/item/csohit/') ~= 
 local W = function(typeName) return stub.weapon('w', typeName) end
 local SWORD = W('LongBladeOneHand')
 local SWORD_SWINGS = expected('swing', { 'ringingBladeMetal', 'bladeMetal' })
-local DEFAULT_FLESH = expected('hit', { 'Flesh', 'metallicPunchyFlesh' })
-local DEFAULT_ARMOR = expected('hit', { 'armorMediumPure', 'crunchyFleshWBluntRing', 'Flesh', 'metallicPunchyFlesh' })
+local DEFAULT_FLESH = expected('hit', { 'FleshHit', 'metallicPunchyFleshHit' })
+local DEFAULT_ARMOR = expected('hit', { 'armorMediumPureHit', 'BluntBoneHit', 'FleshHit', 'metallicPunchyFleshHit' })
 
 print('\n== loading ==')
 check(script.interfaceName == 'CombatSoundsOverhaul', 'provides I.CombatSoundsOverhaul')
@@ -230,7 +230,7 @@ check(pitchOk, 'hits play at a pitch between 0.9 and 1.1 too')
 armorHit('Light Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
     weapon = W('ShortBladeOneHand') })
 check(stub.stopped[1] == 'Light Armor Hit' and #stub.filesPlayed == 1
-    and inSet(expected('hit', { 'FleshySlice', 'Flesh' }), lastFile()),
+    and inSet(expected('hit', { 'FleshSlice', 'FleshHit' }), lastFile()),
     'light armor is swapped for the flesh sounds of the weapon')
 
 print('\n== hits on no armor ==')
@@ -317,37 +317,37 @@ check(inSet(SPEAR_THRUST_SWINGS, spearSwing('thrust', true)), 'an early released
 stub.rightHand = nil
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
 local fleshCases = {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'FleshySlice', 'Flesh' } },
-    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'FleshyStab', 'Flesh' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'Flesh' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'FleshyStab', 'Flesh' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'Flesh' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'FleshyStab', 'Flesh' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'metallicPunchyFlesh' } },
-    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'metallicPunchyFlesh' } },
-    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'FleshyStab' } },
-    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'Flesh', 'metallicPunchyFlesh' } },
-    { label = 'fists', attacker = npc, categories = { 'metallicPunchyFlesh', 'Flesh' } },
-    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'metallicPunchyFlesh', 'Flesh' } },
-    { label = 'axe', weapon = 'AxeTwoHand', categories = { 'Flesh', 'metallicPunchyFlesh' } },
-    { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'Flesh', 'metallicPunchyFlesh' } },
-    { label = 'arrow', weapon = 'MarksmanBow', categories = { 'Flesh', 'metallicPunchyFlesh' } },
-    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'Flesh', 'metallicPunchyFlesh' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'FleshSlice', 'FleshHit' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'FleshHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'FleshHit' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'FleshStab', 'FleshHit' } },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'metallicPunchyFleshHit' } },
+    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'metallicPunchyFleshHit' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'FleshStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'fists', attacker = npc, categories = { 'metallicPunchyFleshHit', 'FleshHit' } },
+    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'metallicPunchyFleshHit', 'FleshHit' } },
+    { label = 'axe', weapon = 'AxeTwoHand', categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'arrow', weapon = 'MarksmanBow', categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'FleshHit', 'metallicPunchyFleshHit' } },
 }
 pools('Health Damage', fleshCases)
 pools('Light Armor Hit', { fleshCases[1], fleshCases[2], fleshCases[7], fleshCases[13] })
 -- The fleshy armor hits, and the flesh sounds the weapon would get on light armor
 local armorCases = {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'FleshySlice', 'Flesh' } },
-    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'armorMediumPure', 'BluntRingPure', 'FleshyStab', 'Flesh' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'armorMediumPure', 'BluntRingPure', 'FleshyStab', 'Flesh' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'armorMediumPure', 'BluntRingPure', 'FleshyStab', 'Flesh' } },
-    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'armorMediumPure', 'BluntRingPure', 'FleshyStab' } },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'Flesh', 'metallicPunchyFlesh' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'Flesh' } },
-    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'metallicPunchyFlesh' } },
-    { label = 'fists', attacker = npc, categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'metallicPunchyFlesh', 'Flesh' } },
-    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'armorMediumPure', 'crunchyFleshWBluntRing', 'Flesh', 'metallicPunchyFlesh' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorMediumPureHit', 'BluntBoneHit', 'FleshSlice', 'FleshHit' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab', 'FleshHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab', 'FleshHit' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab', 'FleshHit' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'armorMediumPureHit', 'BluntBoneHit', 'FleshHit', 'metallicPunchyFleshHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'armorMediumPureHit', 'BluntBoneHit', 'FleshHit' } },
+    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntBoneHit', 'metallicPunchyFleshHit' } },
+    { label = 'fists', attacker = npc, categories = { 'armorMediumPureHit', 'BluntBoneHit', 'metallicPunchyFleshHit', 'FleshHit' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'armorMediumPureHit', 'BluntBoneHit', 'FleshHit', 'metallicPunchyFleshHit' } },
 }
 pools('Medium Armor Hit', armorCases)
 pools('Heavy Armor Hit', armorCases)
@@ -362,7 +362,7 @@ for _, tag in ipairs({ 'Health Damage', 'Light Armor Hit', 'Medium Armor Hit', '
     end
 end
 local leaked = uncategorized(HITS, 102)
-for _, category in ipairs({ 'RingingBladePure', 'armorHeavyPure', 'ringingMetalOnMetalPure', 'cutPure', 'stabPure' }) do
+for _, category in ipairs({ 'RingingBladePure', 'armorHeavyPureHit', 'ringingBladeOnMetalPure', 'cutPure', 'stabPure' }) do
     for _, n in ipairs(HITS[category]) do leaked[#leaked + 1] = n end
 end
 local played = {}
@@ -386,10 +386,10 @@ local function bodyHit(bloodType, weapon, extra)
     return s
 end
 bodyHit(2, W('BluntOneHand'))
-check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 'armorHeavyPure' }), lastFile()),
+check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 'armorHeavyPureHit' }), lastFile()),
     'a dwemer machine (sparks) gets a heavy armor hit over the body hit')
 bodyHit(2, W('ShortBladeOneHand'))
-check(inSet(expected('hit', { 'armorHeavyPure', 'ringingMetalOnMetalPure' }), lastFile()), 'and blades ring on it like on heavy armor')
+check(inSet(expected('hit', { 'armorHeavyPureHit', 'ringingBladeOnMetalPure' }), lastFile()), 'and blades ring on it like on heavy armor')
 local bone = bodyHit(1, W('BluntOneHand'))
 check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 'cutPure' }), lastFile()),
     'a skeleton (bone dust) gets a generic metallic hit over the body hit')
@@ -407,7 +407,7 @@ check(inSet(expected('hit', { 'stabPure' }), lastFile()), 'a real spear thrust i
 bodyHit(1, W('SpearTwoWide'), { type = THRUST, sourceType = 'ranged' })
 check(inSet(expected('hit', { 'cutPure' }), lastFile()), 'but only a melee attack counts as a thrust')
 bodyHit(0, W('BluntOneHand'))
-check(inSet(expected('hit', { 'metallicPunchyFlesh' }), lastFile()), 'blood is flesh')
+check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), lastFile()), 'blood is flesh')
 -- What the body counts as, from the blood type and, for ghosts, the record's name and model
 local function bodyOf(bloodType, name, model)
     stub.bloodType, stub.record = bloodType, { name = name, model = model, id = 'test_creature' }
@@ -565,14 +565,14 @@ check(not pcall(api.playSwing, WEAPON.Spear, 1, 'jab'), 'a bad attack type for p
 check(not pcall(api.playSwing, 'Swrod') and not pcall(api.playSwing, WEAPON.Axe, -1)
     and not pcall(api.playSwing, WEAPON.Axe, 'loud'), 'an unknown weapon or a bad volume is an error')
 local hitCases = {
-    { ARMOR.Heavy, nil, nil, { 'armorMediumPure', 'crunchyFleshWBluntRing', 'Flesh', 'metallicPunchyFlesh' } },
-    { ARMOR.Medium, WEAPON.ShortBlade, nil, { 'armorMediumPure', 'crunchyFleshWBluntRing', 'FleshySlice', 'Flesh' } },
-    { ARMOR.Medium, WEAPON.ShortBlade, THRUST, { 'armorMediumPure', 'BluntRingPure', 'FleshyStab', 'Flesh' } },
-    { ARMOR.Light, WEAPON.HandToHand, nil, { 'metallicPunchyFlesh', 'Flesh' } },
-    { ARMOR.Unarmored, WEAPON.Blunt, nil, { 'metallicPunchyFlesh' } },
-    { ARMOR.Unarmored, WEAPON.LongBladeTwoHanded, THRUST, { 'FleshyStab', 'Flesh' } },
-    { ARMOR.Metal, WEAPON.LongBlade, nil, { 'armorHeavyPure', 'ringingMetalOnMetalPure' } },
-    { ARMOR.Metal, nil, nil, { 'armorHeavyPure' } },
+    { ARMOR.Heavy, nil, nil, { 'armorMediumPureHit', 'BluntBoneHit', 'FleshHit', 'metallicPunchyFleshHit' } },
+    { ARMOR.Medium, WEAPON.ShortBlade, nil, { 'armorMediumPureHit', 'BluntBoneHit', 'FleshSlice', 'FleshHit' } },
+    { ARMOR.Medium, WEAPON.ShortBlade, THRUST, { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab', 'FleshHit' } },
+    { ARMOR.Light, WEAPON.HandToHand, nil, { 'metallicPunchyFleshHit', 'FleshHit' } },
+    { ARMOR.Unarmored, WEAPON.Blunt, nil, { 'metallicPunchyFleshHit' } },
+    { ARMOR.Unarmored, WEAPON.LongBladeTwoHanded, THRUST, { 'FleshStab', 'FleshHit' } },
+    { ARMOR.Metal, WEAPON.LongBlade, nil, { 'armorHeavyPureHit', 'ringingBladeOnMetalPure' } },
+    { ARMOR.Metal, nil, nil, { 'armorHeavyPureHit' } },
     { ARMOR.Bone, nil, nil, { 'cutPure' } },
     { ARMOR.Bone, WEAPON.Spear, THRUST, { 'stabPure' } },
 }
@@ -594,7 +594,7 @@ stub.reset()
 script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9, attackType = THRUST })
 script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
 check(inSet(expected('swing', { 'bladeMetal', 'ringingBladeMetal' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
-    and inSet(expected('hit', { 'armorMediumPure', 'BluntRingPure', 'FleshyStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
+    and inSet(expected('hit', { 'armorMediumPureHit', 'BluntRingPure', 'FleshStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
     'the PlaySwing and PlayHit events do the same')
 
 print('\n== play handlers ==')

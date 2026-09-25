@@ -23,6 +23,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT = os.path.join(ROOT, 'Scripts', 'CSO', 'SoundManager.lua')
+TESTS = os.path.join(ROOT, 'tools', 'tests', 'test.lua')
 SORTING = os.path.join(ROOT, 'sorting')
 UNUSED = '_unused'
 KINDS = {  # sorting/ folder -> (CSO folder, file prefix, Lua table)
@@ -244,7 +245,7 @@ def used_categories(lines):
 def import_():
     lines = open(SCRIPT, encoding='utf-8').read().split('\n')
     before = list(lines)
-    moved_by_kind, sorted_by_kind = {}, {}
+    moved_by_kind, sorted_by_kind, all_renames = {}, {}, {}
     for kind, (_, prefix, table) in KINDS.items():
         categories, seen = read_sorting(kind)
         sorted_by_kind[kind] = categories
@@ -255,6 +256,7 @@ def import_():
         old = read_categories(lines, table)
         moved = follow(old, categories)
         renames = renamed(old, categories, moved)
+        all_renames.update({o: n for n, o in renames.items()})
         moved_by_kind[kind] = moved
         for name in sorted(set(old) & set(categories)):
             added, removed = categories[name] - old[name], old[name] - categories[name]
@@ -284,6 +286,13 @@ def import_():
         return
     open(SCRIPT, 'w', encoding='utf-8').write('\n'.join(lines))
     print(f'Wrote {os.path.relpath(SCRIPT, ROOT)}')
+    # A rename changes nothing that plays, so the tests follow it too. Splits and merges do, and are left to a person.
+    if all_renames and os.path.exists(TESTS):
+        tests = open(TESTS, encoding='utf-8').read()
+        renamed_tests = re.sub(r"'(\w+)'", lambda m: "'" + all_renames.get(m.group(1), m.group(1)) + "'", tests)
+        if renamed_tests != tests:
+            open(TESTS, 'w', encoding='utf-8').write(renamed_tests)
+            print(f'Renamed them in {os.path.relpath(TESTS, ROOT)} too')
 
 
 def main():
