@@ -1,4 +1,4 @@
--- Combat Sounds Overhaul, event driven. This file takes the place of CSO's own Scripts/CSO/SoundManager.lua, so
+-- Combat Juice - Combat Sounds Overhaul. This file takes the place of CSO's own Scripts/CSO/SoundManager.lua, so
 -- CSO's plugin attaches it and nothing new needs enabling. The sounds are played from where CSO installed them.
 --
 -- CSO swaps the vanilla weapon swishes and armor hit sounds for its own. The original asked every frame, on every
@@ -359,7 +359,7 @@ local function getFiles()
         end
         table.sort(found)
         if #found == 0 and isPlayer then
-            print('[Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
+            print('[Combat Juice - CSO] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
         end
         local all, inAll = {}, {}
         local byCategory = { all = all }
@@ -621,7 +621,7 @@ local function swingGroupsOf(weaponId)
                     known[#known + 1] = group
                 elseif not unknownGroups[group] then
                     unknownGroups[group] = true
-                    print('[Combat Sounds Overhaul] A swing groups handler gave ' .. tostring(group)
+                    print('[Combat Juice - CSO] A swing groups handler gave ' .. tostring(group)
                         .. ', which is not one of SWING_GROUPS; it is left out')
                 end
             end
@@ -676,8 +676,8 @@ if isPlayer then
     I.Settings.registerPage {
         key = SETTINGS_PAGE,
         l10n = 'CombatSoundsOverhaul',
-        name = 'Combat Sounds Overhaul',
-        description = 'Event driven Combat Sounds Overhaul.',
+        name = 'Combat Juice - Combat Sounds Overhaul',
+        description = "Combat Sounds Overhaul's swings and hits, picked for the weapon and what it hits.",
     }
     I.Settings.registerGroup {
         key = SETTINGS_GROUP,
@@ -739,7 +739,7 @@ local function play(file, kind, surface, attack, tag, via, volume, pitch, role)
     }
     local stopped = auxUtil.callEventHandlers(playHandlers, info)
     if debugLog then
-        print(string.format('[Combat Sounds Overhaul] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
+        print(string.format('[Combat Juice - CSO] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
             tostring(info.file), describe(via, attack.weapon, surface, attack.attackType) .. ', ' .. tostring(info.category)
                 .. (role and (', ' .. role) or ''), info.pitch,
             stopped and ' - stopped by a handler' or ''))

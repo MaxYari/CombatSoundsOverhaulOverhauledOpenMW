@@ -1,4 +1,4 @@
-# Combat Sounds Overhaul - Event Driven
+# Combat Juice - Combat Sounds Overhaul
 
 A drop-in replacement for the script of [Combat Sounds Overhaul](https://www.nexusmods.com/morrowind/mods/53859) (CSO) by Jyggalagpuff. It uses the same sounds and does the same job: weapon swings and armor hits play CSO's randomized sounds instead of the vanilla ones.
 
@@ -23,7 +23,7 @@ Every CSO sound plays at a slightly random pitch, between 0.9 and 1.1.
 
 ## Settings
 
-In **Options → Scripts → Combat Sounds Overhaul**:
+In **Options → Scripts → Combat Juice - Combat Sounds Overhaul**:
 
 - **Hit Volume**, from 0 to 1: every hit sound this mod plays, including the rings and the flesh under armor hits.
 - **Swing Volume**, from 0 to 1: every whoosh this mod plays.
