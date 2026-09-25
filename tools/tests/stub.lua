@@ -155,6 +155,8 @@ M.packages = {
         },
         Combat = {
             addOnHitHandler = function(fn) M.hitHandlers[#M.hitHandlers + 1] = fn end,
+            ATTACK_TYPES = { Chop = 0, Slash = 1, Thrust = 2 },
+            ATTACK_SOURCE_TYPES = { Magic = 'magic', Melee = 'melee', Ranged = 'ranged', Unspecified = 'unspecified' },
         },
     },
 }

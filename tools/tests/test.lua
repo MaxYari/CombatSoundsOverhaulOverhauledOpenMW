@@ -56,7 +56,7 @@ local SWINGS = {
 }
 local HITS = {
     flesh = range(1, 10), punchyFlesh = range(25, 29), crunchyFlesh = { 72, 79 }, fleshySlice = range(61, 64),
-    fleshyStab = { 65, 66, 67, 70, 73, 74, 75, 76 }, stab = { 77, 78 }, blade = range(11, 17),
+    fleshyStab = { 65, 66, 67, 70, 73, 74, 75, 76 }, genericStab = { 77, 78 }, genericMetallic = range(11, 17),
     armor = { 18, 19, 20, 21, 30, 31, 32, 57, 58, 59, 60 },
     armorHeavy = (function() local t = range(22, 24)
         for _, r in ipairs({ range(33, 40), range(82, 95), range(99, 102) }) do for _, n in ipairs(r) do t[#t + 1] = n end end
@@ -84,11 +84,11 @@ local function sameSet(a, b)
     for k in pairs(a) do if not b[k] then return false end end
     return true
 end
--- Everything pickFile comes up with over many draws
-local function draws(tag, options)
+-- Everything pickFile comes up with over many draws, on the main script or the given interface
+local function draws(tag, options, iface)
     local seen = {}
     for _ = 1, 3000 do
-        local f = api.pickFile(tag, options)
+        local f = (iface or api).pickFile(tag, options)
         if f then seen[f] = true end
     end
     return seen
@@ -226,7 +226,7 @@ check(pitchOk, 'hits play at a pitch between 0.85 and 1 too')
 armorHit('Light Armor Hit', { successful = true, damage = { health = 10 }, attacker = stub.npc(),
     weapon = W('ShortBladeOneHand') })
 check(stub.stopped[1] == 'Light Armor Hit' and #stub.filesPlayed == 1
-    and inSet(expected('hit', { 'fleshySlice', 'fleshyStab' }), lastFile()),
+    and inSet(expected('hit', { 'fleshySlice', 'flesh' }), lastFile()),
     'light armor is swapped for the flesh sounds of the weapon')
 
 print('\n== hits on no armor ==')
@@ -269,12 +269,13 @@ onUpdate(0.016)
 check(#stub.filesPlayed == 0, 'the check is made once per hit, not kept up')
 
 print('\n== what the attack is made with, and what it lands on ==')
-local function pools(tag, cases)
+local CHOP, THRUST = 0, 2 -- I.Combat.ATTACK_TYPES
+local function pools(tag, cases, iface)
     for _, c in ipairs(cases) do
-        local seen = draws(tag, { weapon = c.weapon and W(c.weapon), attacker = c.attacker })
+        local seen = draws(tag, { weapon = c.weapon and W(c.weapon), attacker = c.attacker, attackType = c.attackType }, iface)
         local want = expected(c.folder or 'hit', c.categories)
-        check(sameSet(seen, want), string.format('%s by %s: %s (%d files)', tag, c.label,
-            table.concat(c.categories, ' + '), count(seen)))
+        check(sameSet(seen, want), string.format('%s by %s%s: %s (%d files)', tag, c.label,
+            c.attackType == THRUST and ' thrust' or '', table.concat(c.categories, ' + '), count(seen)))
     end
 end
 local npc, creature = stub.npc(), stub.creature()
@@ -294,52 +295,67 @@ pools('Weapon Swish', {
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
 local fleshCases = {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'fleshySlice', 'fleshyStab' } },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'fleshySlice', 'blade' } },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'fleshySlice', 'blade' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'fleshySlice', 'flesh' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'fleshyStab', 'flesh' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'flesh' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'fleshyStab', 'flesh' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'flesh', 'crunchyFlesh' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'fleshyStab', 'flesh', 'crunchyFlesh' } },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'crunchyFlesh', 'punchyFlesh' } },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'fleshyStab', 'stab' } },
+    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'crunchyFlesh', 'punchyFlesh' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'fleshyStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'flesh', 'punchyFlesh' } },
     { label = 'fists', attacker = npc, categories = { 'punchyFlesh', 'flesh' } },
+    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'punchyFlesh', 'flesh' } },
     { label = 'axe', weapon = 'AxeTwoHand', categories = { 'flesh', 'punchyFlesh' } },
-    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'flesh', 'punchyFlesh' } },
+    { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'flesh', 'punchyFlesh' } },
     { label = 'arrow', weapon = 'MarksmanBow', categories = { 'flesh', 'punchyFlesh' } },
-    { label = 'claws', attacker = creature, categories = { 'flesh', 'punchyFlesh' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'flesh', 'punchyFlesh' } },
 }
 pools('Health Damage', fleshCases)
-pools('Light Armor Hit', { fleshCases[1], fleshCases[4], fleshCases[7] })
+pools('Light Armor Hit', { fleshCases[1], fleshCases[2], fleshCases[7], fleshCases[13] })
 local armorCases = {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorFlesh', 'armorStab' } },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', attackType = THRUST, categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', attackType = THRUST, categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'armorFlesh', 'armorStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
-    { label = 'mace', weapon = 'BluntOneHand', categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
-    { label = 'claws', attacker = creature, categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { label = 'mace', weapon = 'BluntOneHand', attackType = THRUST, categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'armorFlesh', 'armorCrunchyFlesh' } },
 }
 pools('Medium Armor Hit', armorCases)
 pools('Heavy Armor Hit', armorCases)
--- The plain clanks (armor, armorHeavy, armorHeavyBlade) are left to dwemer machines; 68, 97 and 98 aren't sorted
+-- The plain clanks (armor, armorHeavy, armorHeavyBlade) are left to dwemer machines, the generic hits and stabs to
+-- bone; 68, 97 and 98 aren't sorted
 local heard = {}
 for _, tag in ipairs({ 'Health Damage', 'Light Armor Hit', 'Medium Armor Hit', 'Heavy Armor Hit' }) do
     for _, c in ipairs(fleshCases) do
-        for f in pairs(draws(tag, { weapon = c.weapon and W(c.weapon), attacker = c.attacker })) do heard[f] = true end
+        for f in pairs(draws(tag, { weapon = c.weapon and W(c.weapon), attacker = c.attacker, attackType = c.attackType })) do
+            heard[f] = true
+        end
     end
 end
 local leaked = { 68, 97, 98, 96 }
-for _, category in ipairs({ 'armor', 'armorHeavy' }) do
+for _, category in ipairs({ 'armor', 'armorHeavy', 'genericMetallic', 'genericStab' }) do
     for _, n in ipairs(HITS[category]) do leaked[#leaked + 1] = n end
 end
 local played = {}
 for _, n in ipairs(leaked) do
     if heard[string.format('sound/fx/item/csohit/hit%d.wav', n)] then played[#played + 1] = n end
 end
-check(#played == 0, 'the plain armor clanks and the unsorted ones never play on armor or flesh' ..
+check(#played == 0, 'the plain clanks, the bone sounds and the unsorted ones never play on armor or flesh' ..
     (#played > 0 and (' (played: ' .. table.concat(played, ', ') .. ')') or ''))
 
 print('\n== bodies ==')
-local function bodyHit(bloodType, weapon)
+local function bodyHit(bloodType, weapon, extra)
     stub.bloodType = bloodType
     local s = loadScript(true)
     stub.reset()
-    stub.hit({ successful = true, damage = { health = 10 }, attacker = npc, weapon = weapon })
+    local hit = { successful = true, damage = { health = 10 }, attacker = npc, weapon = weapon }
+    for k, v in pairs(extra or {}) do hit[k] = v end
+    stub.hit(hit)
     stub.enginePlays('Health Damage')
     s.engineHandlers.onUpdate(0.016)
     stub.bloodType = 0
@@ -351,8 +367,21 @@ check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 
 bodyHit(2, W('ShortBladeOneHand'))
 check(inSet(expected('hit', { 'armorHeavy', 'armorHeavyBlade' }), lastFile()), 'and blades ring on it like on heavy armor')
 local bone = bodyHit(1, W('BluntOneHand'))
-check(#stub.filesPlayed == 0 and stub.playing['health damage'] == true, 'a skeleton (bone dust) keeps only the body hit')
-check(bone.interface.pickFile('Health Damage') == nil, 'nothing answers a bone body yet')
+check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 'genericMetallic' }), lastFile()),
+    'a skeleton (bone dust) gets a generic metallic hit over the body hit')
+pools('Health Damage', {
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'genericMetallic' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'genericStab' } },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'genericStab' } },
+    { label = 'mace', weapon = 'BluntOneHand', categories = { 'genericMetallic' } },
+    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'genericMetallic' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'genericMetallic' } },
+    { label = 'arrow', weapon = 'MarksmanBow', categories = { 'genericMetallic' } },
+}, bone.interface)
+bodyHit(1, W('SpearTwoWide'), { type = THRUST, sourceType = 'melee' })
+check(inSet(expected('hit', { 'genericStab' }), lastFile()), 'a real spear thrust into a skeleton stabs')
+bodyHit(1, W('SpearTwoWide'), { type = THRUST, sourceType = 'ranged' })
+check(inSet(expected('hit', { 'genericMetallic' }), lastFile()), 'but only a melee attack counts as a thrust')
 bodyHit(0, W('BluntOneHand'))
 check(inSet(expected('hit', { 'crunchyFlesh', 'punchyFlesh' }), lastFile()), 'blood is flesh')
 -- What the body counts as, from the blood type and, for ghosts, the record's name and model
@@ -466,6 +495,9 @@ check(line:find('Heavy Armor Hit', 1, true) and line:find('(hit, axe 2h, heavy a
     'a two-handed axe on heavy armor')
 line = hitBy({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('ShortBladeOneHand') }, 'Light Armor Hit')
 check(line:find('(hit, shortBlade 1h, light armor, pitch ', 1, true) ~= nil, 'a dagger on light armor')
+line = hitBy({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('LongBladeOneHand'), type = THRUST,
+    sourceType = 'melee' }, 'Medium Armor Hit')
+check(line:find('(hit, longBlade 1h thrust, medium armor, pitch ', 1, true) ~= nil, 'a longsword thrust on medium armor')
 line = hitBy({ successful = true, damage = { health = 5 }, attacker = npc })
 check(line:find('(unarmored hit, handToHand, flesh body, pitch ', 1, true) ~= nil, 'a punch on an unarmored spot')
 line = hitBy({ successful = true, damage = { health = 5 }, attacker = creature })
@@ -497,28 +529,34 @@ check(api.playSwing(WEAPON.Natural) == nil and api.playSwing(WEAPON.Bow) == nil,
 check(not pcall(api.playSwing, 'Swrod') and not pcall(api.playSwing, WEAPON.Axe, -1)
     and not pcall(api.playSwing, WEAPON.Axe, 'loud'), 'an unknown weapon or a bad volume is an error')
 local hitCases = {
-    { ARMOR.Heavy, nil, { 'armorFlesh', 'armorCrunchyFlesh' } },
-    { ARMOR.Medium, WEAPON.ShortBlade, { 'armorFlesh', 'armorStab' } },
-    { ARMOR.Light, WEAPON.HandToHand, { 'punchyFlesh', 'flesh' } },
-    { ARMOR.Unarmored, WEAPON.Blunt, { 'crunchyFlesh', 'punchyFlesh' } },
-    { ARMOR.Metal, WEAPON.LongBlade, { 'armorHeavy', 'armorHeavyBlade' } },
-    { ARMOR.Metal, nil, { 'armorHeavy' } },
+    { ARMOR.Heavy, nil, nil, { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { ARMOR.Medium, WEAPON.ShortBlade, nil, { 'armorFlesh', 'armorCrunchyFlesh' } },
+    { ARMOR.Medium, WEAPON.ShortBlade, THRUST, { 'armorFlesh', 'armorStab' } },
+    { ARMOR.Light, WEAPON.HandToHand, nil, { 'punchyFlesh', 'flesh' } },
+    { ARMOR.Unarmored, WEAPON.Blunt, nil, { 'crunchyFlesh', 'punchyFlesh' } },
+    { ARMOR.Unarmored, WEAPON.LongBladeTwoHanded, THRUST, { 'fleshyStab', 'flesh', 'crunchyFlesh' } },
+    { ARMOR.Metal, WEAPON.LongBlade, nil, { 'armorHeavy', 'armorHeavyBlade' } },
+    { ARMOR.Metal, nil, nil, { 'armorHeavy' } },
+    { ARMOR.Bone, nil, nil, { 'genericMetallic' } },
+    { ARMOR.Bone, WEAPON.Spear, THRUST, { 'genericStab' } },
 }
 for _, c in ipairs(hitCases) do
     local seen = {}
-    for _ = 1, 2000 do seen[api.playHit(c[1], 0.7, c[2])] = true end
-    check(sameSet(seen, expected('hit', c[3])), string.format('playHit %s by %s: %s', c[1], c[2] or 'anything',
-        table.concat(c[3], ' + ')))
+    for _ = 1, 2000 do seen[api.playHit(c[1], 0.7, c[2], c[3])] = true end
+    check(sameSet(seen, expected('hit', c[4])), string.format('playHit %s by %s%s: %s', c[1], c[2] or 'anything',
+        c[3] == THRUST and ' thrust' or '', table.concat(c[4], ' + ')))
 end
 stub.reset()
 api.playHit(ARMOR.Light, 0.3)
 check(stub.filesPlayed[1].options.volume == 0.3 and #stub.stopped == 0, 'playHit plays at the volume given, stopping nothing')
-check(api.playHit(ARMOR.Bone) == nil, 'bone has no hits yet')
-check(not pcall(api.playHit, 'Chainmail') and not pcall(api.playHit, ARMOR.Heavy, 1, 'Swrod'),
-    'an unknown armor or weapon is an error')
+check(api.playHit(ARMOR.Ghost) == nil, 'ghost has no hits yet')
+check(not pcall(api.playHit, 'Chainmail') and not pcall(api.playHit, ARMOR.Heavy, 1, 'Swrod')
+    and not pcall(api.playHit, ARMOR.Heavy, 1, WEAPON.Spear, 7), 'an unknown armor, weapon or attack type is an error')
+check(not pcall(api.emit, 'Heavy Armor Hit', { attackType = 'stab' }) and not pcall(api.pickFile, 'Heavy Armor Hit', { attackType = 9 }),
+    'so is a bad attack type for emit and pickFile')
 stub.reset()
 script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9 })
-script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear })
+script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
 check(inSet(expected('swing', { 'heavyMetalGeneric' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
     and inSet(expected('hit', { 'armorFlesh', 'armorStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
     'the PlaySwing and PlayHit events do the same')
@@ -539,21 +577,21 @@ check(info and info.kind == 'swing' and info.tag == 'Weapon Swish' and info.weap
     and info.via == 'release' and info.layered == false and info.file == lastFile(), 'a handler hears about a swing before it plays')
 seen = {}
 stub.reset()
-stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand') })
+stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand'), type = CHOP, sourceType = 'melee' })
 stub.enginePlays('Health Damage')
 stub.enginePlays('Heavy Armor Hit')
 h.engineHandlers.onUpdate(0.016)
 info = seen[1]
 check(info and info.kind == 'hit' and info.tag == 'Heavy Armor Hit' and info.weapon == 'AxeTwoHanded' and info.armor == 'Heavy'
-    and info.via == 'hit' and info.layered == false, 'and about a hit, with the weapon and armor')
+    and info.attackType == CHOP and info.via == 'hit' and info.layered == false, 'and about a hit, with the weapon, armor and attack type')
 seen = {}
 stub.reset()
 stub.hit({ successful = true, damage = { health = 5 }, attacker = npc })
 stub.enginePlays('Health Damage')
 h.engineHandlers.onUpdate(0.016)
 info = seen[1]
-check(info and info.tag == 'Health Damage' and info.armor == 'Unarmored' and info.weapon == 'HandToHand' and info.layered == true,
-    'a layer over the body hit says so')
+check(info and info.tag == 'Health Damage' and info.armor == 'Unarmored' and info.weapon == 'HandToHand' and info.layered == true
+    and info.attackType == nil, 'a layer over the body hit says so; a punch has no attack type')
 seen = {}
 cso.playHit(cso.ARMOR.Metal, 0.6)
 check(seen[1] and seen[1].tag == nil and seen[1].via == 'playHit' and seen[1].armor == 'Metal' and seen[1].volume == 0.6,

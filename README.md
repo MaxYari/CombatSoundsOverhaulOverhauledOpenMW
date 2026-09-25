@@ -38,10 +38,19 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Hits, by what they land on:**
 
-- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
-- Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
+- Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
+- Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
+  - Short blades: slices and flesh impacts.
+  - One-handed long blades: flesh impacts. Two-handed ones crunch too.
+  - A thrust with a blade or spear: stabs. Blades keep their flesh impacts among them.
+  - Blunt weapons: crunches and punches.
+  - Fists: punches and flesh impacts.
+  - Everything else, spears' swings included: flesh and punchy impacts.
 - Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
-- Skeletons, liches and bonelords, and ghosts, spectres and spirits, have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+- Skeletons, liches and bonelords get plain metallic hits, or plain stabs for a thrust, whatever the weapon.
+- Ghosts, spectres and spirits have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+
+A thrust only counts as one for a melee attack made with a weapon.
 
 ## The body hit sound
 
@@ -88,6 +97,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
 
 - `emit(tag, options)` returns the path of the sound it played, or `nil` if it played nothing. `options` is optional and can hold:
   - `weapon` and `attacker`: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
+  - `attackType`: one of `I.Combat.ATTACK_TYPES`, for a hit. A thrust with a weapon picks the stabs.
   - `force`: play something even when CSO has no sound for the attack.
   - `volume` and `pitch`. The pitch is random between 0.85 and 1 otherwise.
 - `TAGS` lists the ids CSO answers: `Weapon Swish`, `SwishS`, `SwishM`, `SwishL`, `Light Armor Hit`, `Medium Armor Hit`, `Heavy Armor Hit` and `Health Damage`, in any case.
@@ -105,9 +115,11 @@ local cso = I.CombatSoundsOverhaul
 
 cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
 cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
+-- and optionally the attack type, one of I.Combat.ATTACK_TYPES
+cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)
 ```
 
-- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Bone` and `Ghost` have no hits yet.
+- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Ghost` has no hits yet.
 - `getBody()` returns what the actor's body counts as when a hit lands on no armor: `Unarmored`, `Metal`, `Bone` or `Ghost`.
 - The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
 - An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
@@ -123,6 +135,7 @@ cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, a
 - `tag`: the vanilla sound id it answers, or `nil` from `playSwing` and `playHit`.
 - `weapon`: one of `WEAPON`, or `nil` if unknown.
 - `armor`: one of `ARMOR`, for a hit.
+- `attackType`: one of `I.Combat.ATTACK_TYPES`, for a hit by a melee weapon, or when one was asked for.
 - `layered`: `true` when it plays on top of the vanilla body hit, rather than in place of a vanilla sound.
 - `via`: what set it off. This is `release`, `early release`, `text key`, `hit`, `unarmored hit`, `emit`, `event`, `playSwing` or `playHit`.
 
@@ -143,7 +156,7 @@ Scripts that can't reach the actor's interface, such as global scripts, can send
 
 - `CombatSoundsOverhaul_Emit`: `{ tag = 'SwishL' }`, plus any of `emit`'s options.
 - `CombatSoundsOverhaul_PlaySwing`: `{ weapon = ..., volume = ... }`.
-- `CombatSoundsOverhaul_PlayHit`: `{ armor = ..., volume = ..., weapon = ... }`.
+- `CombatSoundsOverhaul_PlayHit`: `{ armor = ..., volume = ..., weapon = ..., attackType = ... }`.
 
 ### Debugging
 

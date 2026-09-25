@@ -45,11 +45,22 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 [b]Hits, by what they land on:[/b]
 
 [list]
-[*]Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
-[*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
-[*]Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
-[*]Skeletons, liches and bonelords, and ghosts, spectres and spirits, have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+[*]Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. A thrust with a blade or spear gets stabs with a metal ring among them, and everything else gets crunchy ones.
+[*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
+[list]
+[*]Short blades: slices and flesh impacts.
+[*]One-handed long blades: flesh impacts. Two-handed ones crunch too.
+[*]A thrust with a blade or spear: stabs. Blades keep their flesh impacts among them.
+[*]Blunt weapons: crunches and punches.
+[*]Fists: punches and flesh impacts.
+[*]Everything else, spears' swings included: flesh and punchy impacts.
 [/list]
+[*]Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
+[*]Skeletons, liches and bonelords get plain metallic hits, or plain stabs for a thrust, whatever the weapon.
+[*]Ghosts, spectres and spirits have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+[/list]
+
+A thrust only counts as one for a melee attack made with a weapon.
 
 [size=5][b]The body hit sound[/b][/size]
 
@@ -102,6 +113,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 [*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold:
 [list]
 [*][font=Courier New]weapon[/font] and [font=Courier New]attacker[/font]: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
+[*][font=Courier New]attackType[/font]: one of [font=Courier New]I.Combat.ATTACK_TYPES[/font], for a hit. A thrust with a weapon picks the stabs.
 [*][font=Courier New]force[/font]: play something even when CSO has no sound for the attack.
 [*][font=Courier New]volume[/font] and [font=Courier New]pitch[/font]. The pitch is random between 0.85 and 1 otherwise.
 [/list]
@@ -121,10 +133,12 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 [code]local cso = I.CombatSoundsOverhaul
 
 cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
-cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon[/code]
+cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
+-- and optionally the attack type, one of I.Combat.ATTACK_TYPES
+cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)[/code]
 
 [list]
-[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]Bone[/font] and [font=Courier New]Ghost[/font] have no hits yet.
+[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]Ghost[/font] has no hits yet.
 [*][font=Courier New]getBody()[/font] returns what the actor's body counts as when a hit lands on no armor: [font=Courier New]Unarmored[/font], [font=Courier New]Metal[/font], [font=Courier New]Bone[/font] or [font=Courier New]Ghost[/font].
 [*]The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
 [*]An unknown name is an error, and so is a misspelled enum field such as [font=Courier New]cso.WEAPON.Swrod[/font].
@@ -142,6 +156,7 @@ cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, a
 [*][font=Courier New]tag[/font]: the vanilla sound id it answers, or [font=Courier New]nil[/font] from [font=Courier New]playSwing[/font] and [font=Courier New]playHit[/font].
 [*][font=Courier New]weapon[/font]: one of [font=Courier New]WEAPON[/font], or [font=Courier New]nil[/font] if unknown.
 [*][font=Courier New]armor[/font]: one of [font=Courier New]ARMOR[/font], for a hit.
+[*][font=Courier New]attackType[/font]: one of [font=Courier New]I.Combat.ATTACK_TYPES[/font], for a hit by a melee weapon, or when one was asked for.
 [*][font=Courier New]layered[/font]: [font=Courier New]true[/font] when it plays on top of the vanilla body hit, rather than in place of a vanilla sound.
 [*][font=Courier New]via[/font]: what set it off. This is [font=Courier New]release[/font], [font=Courier New]early release[/font], [font=Courier New]text key[/font], [font=Courier New]hit[/font], [font=Courier New]unarmored hit[/font], [font=Courier New]emit[/font], [font=Courier New]event[/font], [font=Courier New]playSwing[/font] or [font=Courier New]playHit[/font].
 [/list]
@@ -162,7 +177,7 @@ Scripts that can't reach the actor's interface, such as global scripts, can send
 [list]
 [*][font=Courier New]CombatSoundsOverhaul_Emit[/font]: [font=Courier New]{ tag = 'SwishL' }[/font], plus any of [font=Courier New]emit[/font]'s options.
 [*][font=Courier New]CombatSoundsOverhaul_PlaySwing[/font]: [font=Courier New]{ weapon = ..., volume = ... }[/font].
-[*][font=Courier New]CombatSoundsOverhaul_PlayHit[/font]: [font=Courier New]{ armor = ..., volume = ..., weapon = ... }[/font].
+[*][font=Courier New]CombatSoundsOverhaul_PlayHit[/font]: [font=Courier New]{ armor = ..., volume = ..., weapon = ..., attackType = ... }[/font].
 [/list]
 
 [size=4][b]Debugging[/b][/size]
