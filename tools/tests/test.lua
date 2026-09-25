@@ -109,7 +109,7 @@ local function isHit(f) return f ~= nil and f:find('^sound/fx/item/csohit/') ~= 
 
 local W = function(typeName) return stub.weapon('w', typeName) end
 local SWORD = W('LongBladeOneHand')
-local SWORD_SWINGS = expected('swing', { 'ringingBladeMetal', 'bladeMetal' })
+local SWORD_SWINGS = expected('swing', { 'ringingBladeMetal', 'bladeMetal', 'plain' })
 local DEFAULT_FLESH = expected('hit', { 'FleshHit', 'metallicPunchyFleshHit' })
 local MEDIUM_HIT = expected('hit', { 'armorMediumPureHit' })
 local HEAVY_HIT = expected('hit', { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' })
@@ -358,8 +358,8 @@ end
 local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBladeMetal' }, folder = 'swing' },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'bladeMetal' }, folder = 'swing' },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBladeMetal', 'bladeMetal', 'plain' }, folder = 'swing' },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'bladeMetal', 'plain' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal', 'plain' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
@@ -367,12 +367,33 @@ pools('Weapon Swish', {
     { label = 'spear', weapon = 'SpearTwoWide', categories = { 'plain' }, folder = 'swing' },
     { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'plain' }, folder = 'swing' },
     { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'bladeMetal', 'ringingBladeMetal' }, folder = 'swing' },
-    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal', 'plain' }, folder = 'swing' },
     { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
     { label = 'fists', attacker = npc, categories = { 'plain', 'vanilla' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
+-- Swords and maces draw the plain whooshes by a share of their own, not by how many files they are
+local PLAIN = expected('swing', { 'plain' })
+for _, c in ipairs({ { 'LongBladeOneHand', 0.3, 'a longsword' }, { 'LongBladeTwoHand', 0.3, 'a claymore' },
+    { 'BluntOneHand', 0.5, 'a mace' }, { 'BluntTwoClose', 0.5, 'a warhammer' }, { 'BluntTwoWide', 1 / 3, 'a staff' } }) do
+    local plain, runs = 0, 6000
+    for _ = 1, runs do
+        if inSet(PLAIN, api.pickFile('Weapon Swish', { weapon = W(c[1]) })) then plain = plain + 1 end
+    end
+    check(math.abs(plain / runs - c[2]) < 0.03,
+        string.format('%s swings a plain whoosh %.3f of the time (%.2f)', c[3], plain / runs, c[2]))
+end
+local ringing, oneHanded = 0, 0
+for _ = 1, 6000 do
+    local f = api.pickFile('Weapon Swish', { weapon = SWORD })
+    if not inSet(PLAIN, f) then
+        oneHanded = oneHanded + 1
+        if inSet(expected('swing', { 'ringingBladeMetal' }), f) then ringing = ringing + 1 end
+    end
+end
+check(math.abs(ringing / oneHanded - 3 / 9) < 0.04,
+    string.format("the rest of a longsword's whooshes are its two groups drawn together, by file (%.3f ringing)", ringing / oneHanded))
 local SPEAR_THRUST_SWINGS = expected('swing', { 'bladeMetal', 'ringingBladeMetal' })
 local function spearSwing(attackName, early)
     stub.reset()

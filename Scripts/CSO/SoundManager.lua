@@ -86,8 +86,8 @@ local HIT_CATEGORIES = {
 -- stays. Every file of every listed category goes into one draw, so a bigger category comes up more often.
 local SWING_SOUNDS = {
     shortBlade = { 'sharpMetal', 'ringingBladeMetal' },
-    longBlade1 = { 'ringingBladeMetal', 'bladeMetal' },
-    longBlade2 = { 'bladeMetal' },
+    longBlade1 = { 'ringingBladeMetal', 'bladeMetal', 'plain' },
+    longBlade2 = { 'bladeMetal', 'plain' },
     blunt = { 'heavyMetal', 'plain' }, -- maces and warhammers
     axe = { 'heavyMetal' },
     spear = { 'plain' },
@@ -95,6 +95,13 @@ local SWING_SOUNDS = {
     staff = { 'plain', 'bladeMetal' },
     thrown = { 'sharpMetal', 'plain' },
     handToHand = { 'plain', 'vanilla' },
+}
+-- SWING_SOUNDS keys that don't draw from all their files together: a group named here comes up this often, and the
+-- key's other groups share the rest, drawn from together as usual
+local SWING_SHARES = {
+    longBlade1 = { plain = 0.3 },
+    longBlade2 = { plain = 0.3 },
+    blunt = { plain = 0.5 },
 }
 -- Categories that aren't CSO files. vanilla is what the vanilla swing sounds play, read from their records, so a mod
 -- that replaces those files is heard here too.
@@ -464,7 +471,7 @@ local function lookup(soundsTable, weapon, attackType)
     if weapon then keys[#keys + 1] = weapon.family end
     keys[#keys + 1] = 'default'
     for _, key in ipairs(keys) do
-        if soundsTable[key] then return soundsTable[key] end
+        if soundsTable[key] then return soundsTable[key], key end
     end
     return nil
 end
@@ -476,11 +483,14 @@ local function landsOn(tag)
     return armor
 end
 
--- The categories the given *_SOUNDS tables give an attack: the ones drawn from together, and the layers
+-- The categories the given *_SOUNDS tables give an attack: the ones drawn from, the layers, and for a swing, the
+-- shares of the draw from SWING_SHARES
 local function categoriesFor(folder, soundsTables, weapon, attackType)
-    local drawn, layers = nil, nil
+    local drawn, layers, shares = nil, nil, nil
     for _, soundsTable in ipairs(soundsTables or {}) do
-        for _, category in ipairs(lookup(soundsTable, weapon, attackType) or {}) do
+        local categories, key = lookup(soundsTable, weapon, attackType)
+        if soundsTable == SWING_SOUNDS and key then shares = SWING_SHARES[key] end
+        for _, category in ipairs(categories or {}) do
             if folder == 'hit' and HIT_LAYER_CHANCES[category] then
                 layers = layers or {}
                 layers[#layers + 1] = category
@@ -490,7 +500,7 @@ local function categoriesFor(folder, soundsTables, weapon, attackType)
             end
         end
     end
-    return drawn, layers
+    return drawn, layers, shares
 end
 
 local function drawFrom(folder, categories)
@@ -499,10 +509,33 @@ local function drawFrom(folder, categories)
     return list[math.random(#list)]
 end
 
+-- A group with a share of its own comes up that often; the rest are drawn from together
+local function drawByShares(folder, categories, shares)
+    local roll, rest = math.random(), {}
+    for _, category in ipairs(categories) do
+        local share = shares[category]
+        if not share then
+            rest[#rest + 1] = category
+        elseif roll < share then
+            return drawFrom(folder, { category }) or drawFrom(folder, categories)
+        else
+            roll = roll - share
+        end
+    end
+    return drawFrom(folder, rest) or drawFrom(folder, categories)
+end
+
 -- A random file from the categories the given *_SOUNDS tables give an attack made with `weapon`, drawn from all of
--- them together, or nil when none answers. force draws from the whole folder then. Layers aren't in it.
+-- them together unless SWING_SHARES says otherwise, or nil when none answers. force draws from the whole folder
+-- then. Layers aren't in it.
 local function pickFrom(folder, soundsTables, weapon, force, attackType)
-    local file = drawFrom(folder, (categoriesFor(folder, soundsTables, weapon, attackType)))
+    local drawn, _, shares = categoriesFor(folder, soundsTables, weapon, attackType)
+    local file
+    if drawn and shares then
+        file = drawByShares(folder, drawn, shares)
+    else
+        file = drawFrom(folder, drawn)
+    end
     if not file and force then
         local all = getFiles()[folder].all
         if #all > 0 then file = all[math.random(#all)] end

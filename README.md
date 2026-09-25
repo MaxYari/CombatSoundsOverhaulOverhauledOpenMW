@@ -37,9 +37,9 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 **Swings, by weapon:**
 
 - Short blades: sharp metallic whooshes and ringing blade ones.
-- One-handed long blades: ringing blade whooshes and metallic blade ones.
-- Two-handed swords: metallic blade whooshes.
-- Maces and warhammers: heavy metallic and plain whooshes.
+- One-handed long blades: ringing blade whooshes and metallic blade ones, and 30% of the time a plain one.
+- Two-handed swords: metallic blade whooshes, and 30% of the time a plain one.
+- Maces and warhammers: heavy metallic whooshes half the time, plain ones the other half.
 - Axes: heavy metallic whooshes.
 - Spears: metallic blade and ringing blade whooshes for a thrust, plain ones for chops and slashes.
 - Staves: plain and metallic blade whooshes.
@@ -65,7 +65,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 Whatever a hit lands on, a ring plays on top of it one time in four: a ringing blade for blades and axes, a blunt ring for maces and warhammers. On armor the ring comes whether the armor impact played or only the flesh under it. Thrusts, staves, fists, arrows, spears' swings and claws don't ring.
 
-When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The rings are the exception: they're separate layers with a chance of their own.
+When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The exceptions are the plain whooshes of swords, maces and warhammers, which have a set share, and the rings, which are separate layers with a chance of their own.
 
 A thrust only counts as one for a melee attack made with a weapon.
 

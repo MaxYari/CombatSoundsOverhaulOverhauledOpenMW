@@ -6,9 +6,10 @@
 
 sorting/swing/<category>/SwingN.wav and sorting/hit/<category>/HitN.wav are copies to move between folders; the
 number in the name is what counts. A new folder is a new category, and _unused holds the files in none, which
-never play. When a category's folder is renamed, split or merged, the *_SOUNDS tables are pointed at wherever its
-files went, and each change is printed to check. The game never reads sorting/, and git ignores it: the script keeps playing CSO's own files, picked by
-the categories import writes into Scripts/CSO/SoundManager.lua. A category's comment there is kept, and a new one
+never play. When a category's folder is renamed, split or merged, the *_SOUNDS, *_CHANCES and *_SHARES tables are
+pointed at wherever its files went, and each change is printed to check. The game never reads sorting/, and git
+ignores it: the script keeps playing CSO's own files, picked by the categories import writes into
+Scripts/CSO/SoundManager.lua. A category's comment there is kept, and a new one
 is added at the end of its table, so it still has to be put in a *_SOUNDS table to be heard.
 
 --cso is CSO's data folder (the one with Sound/Fx/Item/CSOHit); without it, a folder next to this mod that has one
@@ -200,12 +201,40 @@ SOUNDS_TABLE = re.compile(r'^local (\w+_SOUNDS) = \{')
 SOUNDS_LINE = re.compile(r"^(\s*)(\w+) = \{([^{}]*)\},(\s*--.*)?$")
 CHANCES_TABLE = re.compile(r'^local (\w+_CHANCES) = \{')
 CHANCES_LINE = re.compile(r'^(\s*)(\w+) = ([\d.]+),(\s*--.*)?$')
+SHARES_TABLE = re.compile(r'^local (\w+_SHARES) = \{')
+SHARES_LINE = re.compile(r'^(\s*)(\w+) = \{([^{}]*)\},(\s*--.*)?$')
+SHARE = re.compile(r'(\w+) = ([\d.]+)')
+
+
+def follow_shares(key, body, moved, table):
+    """A *_SHARES line's groups where they went: a split's share is divided between its parts"""
+    shares = []
+    for name, share in SHARE.findall(body):
+        into = moved.get(name, [name])
+        if into != [name]:
+            print(f'  {table}.{key}.{name} -> {", ".join(into) or "nothing"}')
+        for new in into:
+            shares.append((new, round(float(share) / len(into), 3)))
+    return shares
 
 
 def follow_references(lines, moved_by_kind):
-    """Point the *_SOUNDS tables at where the categories they name went, and the *_CHANCES ones too"""
-    out, table, chances = [], None, None
+    """Point the *_SOUNDS tables at where the categories they name went, and the *_CHANCES and *_SHARES ones too"""
+    out, table, chances, shares = [], None, None, None
     for line in lines:
+        m = SHARES_TABLE.match(line)
+        if m:
+            shares = m.group(1)
+        elif shares and line.startswith('}'):
+            shares = None
+        m = SHARES_LINE.match(line) if shares else None
+        if m:
+            indent, key, body, comment = m.groups()
+            moved = moved_by_kind['swing' if shares.startswith('SWING') else 'hit']
+            after = follow_shares(key, body, moved, shares)
+            inner = ', '.join(f'{n} = {v:g}' for n, v in after)
+            out.append(f'{indent}{key} = {{ {inner} }},' + (comment or '') if after else f'{indent}{key} = {{}},' + (comment or ''))
+            continue
         m = CHANCES_TABLE.match(line)
         if m:
             chances = m.group(1)
