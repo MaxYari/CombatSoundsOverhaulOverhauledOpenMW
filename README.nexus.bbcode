@@ -1,264 +1,102 @@
 [size=6][b]Combat Juice - Combat Sounds Overhaul[/b][/size]
 
-A drop-in replacement for the script of [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] (CSO) by Jyggalagpuff. It uses the same sounds and does the same job: weapon swings and armor hits play CSO's randomized sounds instead of the vanilla ones.
-
-The difference is in how it notices them. The original checked every actor, every frame, for any of seven vanilla sounds. This version reacts to the attack animations and hit events that make the engine play those sounds, and does nothing in between.
-
-[size=5][b]How to install[/b][/size]
+A replacement script for [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] (CSO) by Jyggalagpuff. Swings and armor hits still play CSO's sounds, but:
 
 [list]
-[*][b]Requires OpenMW 0.51 or newer.[/b]
-[*][b]Requires [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] 2.0[/b], installed and enabled as usual. This mod plays CSO's sounds from where CSO installs them, so CSO must stay installed.
-[*]Add this mod's folder to your data folders [b]below[/b] Combat Sounds Overhaul, so that its [font=Courier New]Scripts/CSO/SoundManager.lua[/font] replaces CSO's. There is nothing new to enable in Content Files, because CSO's own plugin loads the replaced script.
-[*]If you have the [url=https://www.nexusmods.com/morrowind/mods/58744]Combat Sounds Overhaul - Optimization Patch[/url], remove it. Both replace the same file, so only the one lower in the list takes effect.
+[*]The sounds are picked for the weapon and for what it hits, rather than at random.
+[*]It reacts to attacks and hits as they happen, rather than checking every actor for sounds every frame.
 [/list]
 
-If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installing-mods/]read this first[/url].
-
-[size=5][b]What gets replaced[/b][/size]
+[size=5][b]Install[/b][/size]
 
 [list]
-[*][b]Weapon Swish[/b], the swing of every melee and thrown attack with a weapon. It is swapped as the attack is released. Hand-to-hand swings and a creature's own attacks, its claws and bites, keep the vanilla swish.
-[*][b]SwishS, SwishM, SwishL[/b], played by the [font=Courier New]Sound: Swish[/font] keys in creature attack animations, when the creature holds a weapon.
-[*][b]Light, Medium and Heavy Armor Hit[/b], whenever a hit lands on a piece of armor.
+[*]Requires [b]OpenMW 0.51[/b] or newer.
+[*]Requires [b][url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] 2.0[/b]. Keep it installed, because its sounds are played from there.
+[*]Load this mod [b]below[/b] CSO. There's nothing new to enable: CSO's plugin loads the replaced script.
+[*]Remove the [url=https://www.nexusmods.com/morrowind/mods/58744]CSO Optimization Patch[/url] if you have it. It replaces the same file.
 [/list]
 
-Every CSO sound plays at a slightly random pitch, between 0.9 and 1.1.
+New to OpenMW mods? [url=https://modding-openmw.com/tips/installing-mods/]Read this first[/url].
 
 [size=5][b]Settings[/b][/size]
 
-In [b]Options → Scripts → CJ: Combat Sounds Overhaul[/b]:
+[b]Options → Scripts → CJ: Combat Sounds Overhaul[/b] has [b]Hit Volume[/b] and [b]Swing Volume[/b], each from 0 to 1.
+
+[size=5][b]What it does[/b][/size]
 
 [list]
-[*][b]Hit Volume[/b], from 0 to 1: every hit sound this mod plays, including the rings and the flesh under armor hits.
-[*][b]Swing Volume[/b], from 0 to 1: every whoosh this mod plays.
+[*]Weapon swishes and armor hit sounds are replaced with CSO's, at a slightly random pitch. Fists and creatures' claws and bites keep the vanilla swish.
+[*]Hits that land on no armor get a CSO impact on top of the body hit.
+[*]The body hit ([font=Courier New]Sound\Fx\body hit.wav[/font]) is replaced with a simpler version.
 [/list]
 
-Both leave the vanilla body hit alone.
-
-[size=5][b]How the sounds are picked[/b][/size]
-
-CSO's sounds are sorted by ear into groups, and each attack draws from every group that suits it.
-
-[b]Swings, by weapon:[/b]
-
-Every weapon has some plain whooshes in its mix. Hand-to-hand swings keep the vanilla swish, at the pitch the game gives it.
+[b]Swings:[/b]
 
 [list]
-[*]Short blades: sharp metallic whooshes, ringing ones and ringing blade ones, and 30% of the time a plain one.
-[*]One-handed long blades: ringing blade whooshes and metallic blade ones, and 30% of the time a plain one.
-[*]Two-handed swords: metallic blade whooshes, and 30% of the time a plain one.
-[*]Maces and warhammers: heavy metallic whooshes half the time, plain ones the other half.
-[*]Axes: heavy metallic whooshes, and 30% of the time a plain one.
-[*]Staves, and spears' chops and slashes: plain whooshes half the time, metallic blade ones 40% and heavy metallic ones 10%.
-[*]A spear's thrust: metallic blade and ringing blade whooshes, and 30% of the time a plain one.
-[*]Thrown weapons: sharp metallic, ringing and plain whooshes.
+[*][b]Daggers:[/b] sharp metallic and ringing blade, 30% plain.
+[*][b]One-handed swords:[/b] ringing blade and metallic blade, 30% plain.
+[*][b]Two-handed swords:[/b] metallic blade, 30% plain.
+[*][b]Axes:[/b] heavy metallic, 30% plain.
+[*][b]Maces, warhammers:[/b] heavy metallic 50%, plain 50%.
+[*][b]Staves, spear chops and slashes:[/b] plain 50%, metallic blade 40%, heavy metallic 10%.
+[*][b]Spear thrusts:[/b] metallic blade and ringing blade, 30% plain.
+[*][b]Thrown weapons:[/b] sharp metallic and plain.
 [/list]
 
-[b]Hits, by what they land on:[/b]
+[b]Hits:[/b]
 
 [list]
-[*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon:
-[list]
-[*]Short blades: slices, flesh impacts and metallic punchy ones.
-[*]Long blades: flesh impacts, stabs and metallic punchy ones, for cuts and thrusts alike.
-[*]Axes, staves, spears' swings and claws: flesh impacts and metallic punchy ones.
-[*]A thrust with a blade or spear: stabs among them.
-[*]Blunt weapons: metallic punchy impacts.
-[*]Fists: flesh impacts.
-[*]Arrows and bolts: stabs and flesh impacts.
-[/list]
-[*]Medium and heavy armor: a pure armor impact for the weapon (heavy armor has one set for blades and one for blunt weapons), or a thrust's pure stab. Everything but fists and arrows can also draw a metallic punchy impact instead.
-[list]
-[*]Under a pure impact, the wearer's flesh sound for the weapon always plays, at full volume. The pure impact itself plays three times out of four.
-[*]A metallic punchy impact already has flesh in it, so it plays alone.
-[/list]
-[*]Dwemer machines: the pure heavy armor impacts, but no flesh.
-[*]Skeletons, liches and bonelords: pure cuts, or pure stabs for a thrust, with bone hits among them. Blunt weapons and staves get pure blunt hits and blunt bone hits instead, whatever the attack.
-[*]Ghosts, spectres and spirits: pure cuts, or pure stabs for a thrust. Blunt weapons and staves get pure blunt hits. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
+[*][b]Flesh, light armor:[/b] flesh impacts for the weapon, with slices for daggers, stabs for swords, thrusts and arrows, and punchy metallic ones for all but fists and arrows.
+[*][b]Medium and heavy armor:[/b] an armor impact with the wearer's flesh sound under it, or a punchy metallic impact.
+[*][b]Dwemer machines:[/b] heavy armor impacts.
+[*][b]Skeletons:[/b] pure cuts, stabs or blunt hits, with bone hits.
+[*][b]Ghosts:[/b] pure cuts, stabs or blunt hits.
 [/list]
 
-Whatever a hit lands on, a ring plays on top of it one time in four: a ringing blade for blades and axes, a blunt ring for maces and warhammers. On armor the ring comes whether the armor impact played or only the flesh under it. Thrusts, staves, fists, arrows, spears' swings and claws don't ring.
+Blades, axes, maces and warhammers also ring on top of a quarter of their hits, except thrusts.
 
-When an attack has several sound groups, every file of every group goes into one draw, so a bigger group comes up more often. The exceptions are the swings with set shares above, and the rings, which are separate layers with a chance of their own.
+[size=5][b]Creature sounds[/b][/size]
 
-A thrust only counts as one for a melee attack made with a weapon.
-
-[size=5][b]Sounds for kinds of creatures[/b][/size]
-
-Sounds put in a folder named for a class of creature play on top of every hit such a creature takes, whatever hits it. The folders go in [font=Courier New]Sound/Fx/Item/CJCreature/[/font], in this mod or any mod loaded after it:
+Sounds in [font=Courier New]Sound/Fx/Item/CJCreature/<Class>/[/font], from this or any later mod, play on top of every hit a creature of that class takes. The classes are:
 
 [list]
-[*][font=Courier New]Ghost[/font], [font=Courier New]Skeleton[/font] and [font=Courier New]Metal[/font], from what the actor's body is: ghosts, spectres and spirits; skeletons, liches and bonelords; Dwemer machines.
-[*][font=Courier New]Creatures[/font], [font=Courier New]Daedra[/font], [font=Courier New]Undead[/font] and [font=Courier New]Humanoid[/font], from the creature type in its record.
+[*][font=Courier New]Ghost[/font], [font=Courier New]Skeleton[/font] or [font=Courier New]Metal[/font], from the creature's body.
+[*][font=Courier New]Creatures[/font], [font=Courier New]Daedra[/font], [font=Courier New]Undead[/font] or [font=Courier New]Humanoid[/font], from its record.
 [/list]
 
-A creature can be in two classes, such as a ghost, which is also undead. The first of these with sounds in its folder plays: the class from its body before the one from its type. Each hit plays one file from the folder, picked at random. The folders are empty to start with, so nothing plays until sounds are added.
-
-[size=5][b]The body hit sound[/b][/size]
-
-Every hit that takes health also plays the body hit, "Health Damage" ([font=Courier New]Sound\Fx\body hit.wav[/font]), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
-
-[list]
-[*]On armor, CSO's impact replaces the vanilla armor sound and plays on top of the body hit.
-[*]Where there's no armor, CSO's impact is layered on top of the body hit. The original CSO left those hits with the body hit alone.
-[/list]
-
-[size=5][b]Differences from the original[/b][/size]
-
-[list]
-[*]Sounds are picked for the weapon and for what it hits. The original drew any swing and any hit at random.
-[*]Hits that don't land on armor get a CSO impact on top of the body hit.
-[*]Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
-[*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders and sorting them into groups by the number in their names. A file in no group never plays. [font=Courier New]Swing6[/font], a near copy of [font=Courier New]Swing5[/font], is one of these.
-[*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
-[/list]
+When a creature has two classes, the one from its body is used if its folder has sounds. The folders start out empty.
 
 [size=5][b]For developers[/b][/size]
 
-Every NPC, creature and the player has [font=Courier New]I.CJCombatSoundsOverhaul[/font]. Everything it plays, plays on that actor.
-
-[size=4][b]Swapping a vanilla sound[/b][/size]
-
-Pass [font=Courier New]emit[/font] a vanilla sound id, and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a CSO sound picked for the attack in its place.
-
-[code]local I = require('openmw.interfaces')
-
-I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')
-
--- A hit by a particular weapon, or a swing with one
-I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit', { weapon = someWarhammer })
-I.CJCombatSoundsOverhaul.emit('Weapon Swish', { weapon = someDagger, volume = 0.8, pitch = 1.1 })
-
--- What a hit on no armor does: a CSO impact for the actor's body on top, the vanilla sound left alone
-I.CJCombatSoundsOverhaul.emit('Health Damage')
-
--- A creature's own swing has no CSO sound; force draws from all of CSO's swings instead
-I.CJCombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
-
-[list]
-[*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold:
-[list]
-[*][font=Courier New]weapon[/font] and [font=Courier New]attacker[/font]: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
-[*][font=Courier New]attackType[/font]: one of [font=Courier New]I.Combat.ATTACK_TYPES[/font], for a hit. A thrust with a weapon picks the stabs.
-[*][font=Courier New]force[/font]: play something even when CSO has no sound for the attack.
-[*][font=Courier New]volume[/font] and [font=Courier New]pitch[/font]. The pitch is random between 0.9 and 1.1 otherwise.
-[/list]
-[*][font=Courier New]TAGS[/font] lists the ids CSO answers: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font], [font=Courier New]Heavy Armor Hit[/font] and [font=Courier New]Health Damage[/font], in any case.
-[*][font=Courier New]pickFile(tag, options)[/font] returns the CSO file [font=Courier New]emit[/font] would pick, without playing it.
-[/list]
-
-[size=4][b]Playing a sound for a weapon or an armor[/b][/size]
-
-[font=Courier New]playSwing[/font] and [font=Courier New]playHit[/font] play a CSO sound straight away, without a vanilla sound to replace. What they play is chosen from two enums:
-
-[list]
-[*][font=Courier New]WEAPON[/font]: [font=Courier New]ShortBlade[/font], [font=Courier New]LongBlade[/font], [font=Courier New]LongBladeTwoHanded[/font], [font=Courier New]Blunt[/font], [font=Courier New]BluntTwoHanded[/font] (warhammers), [font=Courier New]Staff[/font], [font=Courier New]Spear[/font], [font=Courier New]Axe[/font], [font=Courier New]AxeTwoHanded[/font], [font=Courier New]Thrown[/font], [font=Courier New]Bow[/font], [font=Courier New]Crossbow[/font], [font=Courier New]HandToHand[/font], and [font=Courier New]Natural[/font] for a creature's own attack.
-[*][font=Courier New]ARMOR[/font]: [font=Courier New]Unarmored[/font] (also a creature of flesh), [font=Courier New]Light[/font], [font=Courier New]Medium[/font], [font=Courier New]Heavy[/font], [font=Courier New]Metal[/font] for a creature of metal like a Dwemer machine, [font=Courier New]Bone[/font] for skeletons, liches and bonelords, and [font=Courier New]Ghost[/font] for ghosts, spectres and spirits.
-[/list]
+Every actor has [font=Courier New]I.CJCombatSoundsOverhaul[/font]. It's per actor, so call it from a script attached after this one, on every actor it should affect.
 
 [code]local cso = I.CJCombatSoundsOverhaul
 
-cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
-cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
--- and optionally the attack type, one of I.Combat.ATTACK_TYPES
-cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)[/code]
+cso.emit('Heavy Armor Hit', { weapon = someMace })  -- swap a vanilla sound, as CSO does when it catches one
+cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)         -- weapon, volume
+cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt)   -- armor, volume, weapon, attack type
 
-[list]
-[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]HandToHand[/font] plays one of the vanilla swish files.
-[*][font=Courier New]getBody()[/font] returns what the actor's body counts as when a hit lands on no armor: [font=Courier New]Unarmored[/font], [font=Courier New]Metal[/font], [font=Courier New]Bone[/font] or [font=Courier New]Ghost[/font].
-[*][font=Courier New]getCreatureClasses()[/font] returns the actor's classes for the creature sound folders, first the one that goes first, for example [font=Courier New]{ 'Ghost', 'Undead' }[/font].
-[*]The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
-[*]An unknown name is an error, and so is a misspelled enum field such as [font=Courier New]cso.WEAPON.Swrod[/font].
-[/list]
-
-[size=4][b]Telling CSO what a weapon is[/b][/size]
-
-CSO goes by a weapon's type. A mod whose weapon should sound like another kind can say so by record id:
-
-[code]local cso = I.CJCombatSoundsOverhaul
-cso.setWeaponKind('my_katana', cso.WEAPON.LongBladeTwoHanded)
-cso.setWeaponKind('my_katana', nil) -- back to what its record says[/code]
-
-[list]
-[*]The record id can be in any case. The kind is one of [font=Courier New]WEAPON[/font].
-[*]It applies to the actor's swings with that weapon, and to hits the actor takes from it. Like the rest of the interface it is per actor, so call it from a script attached to every NPC, creature and the player, for instance as that script loads.
-[/list]
-
-A weapon can also keep its kind and swing with other groups of whooshes. [font=Courier New]SWING_GROUPS[/font] names the groups, such as [font=Courier New]sharpMetal[/font], [font=Courier New]bladeMetal[/font] or [font=Courier New]plain[/font], and [font=Courier New]vanilla[/font] for the game's own swishes. [font=Courier New]addSwingGroupsHandler(handler)[/font] calls [font=Courier New]handler(recordId)[/font] on every swing with a weapon:
-
-[code]cso.addSwingGroupsHandler(function(recordId)
-    if recordId:find('katar') then return { cso.SWING_GROUPS.sharpMetal } end
-end)[/code]
-
-[list]
-[*]Return a list of [font=Courier New]SWING_GROUPS[/font] for the weapon to swing with, or [font=Courier New]nil[/font] to leave it to older handlers and then to its kind. Handlers run newest first.
-[*]An empty list leaves the vanilla swish alone, and so does [font=Courier New]vanilla[/font] when it comes up.
-[*]A name that isn't in [font=Courier New]SWING_GROUPS[/font] is left out, with a warning in [font=Courier New]openmw.log[/font].
-[*]It's per actor too. It runs on every swing, so keep it quick.
-[/list]
-
-[size=4][b]Hearing about a sound before it plays[/b][/size]
-
-[font=Courier New]addOnPlayHandler(handler)[/font] calls [font=Courier New]handler(info)[/font] just before every CSO sound the actor plays. That covers the swaps, [font=Courier New]emit[/font], [font=Courier New]playSwing[/font] and [font=Courier New]playHit[/font]. Handlers run newest first, the same way as [font=Courier New]I.Combat.addOnHitHandler[/font]. Add yours from a script attached after this one.
-
-[font=Courier New]info[/font] holds:
-
-[list]
-[*][font=Courier New]file[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font]: what is about to play. The handler can change any of them. The Hit or Swing Volume setting applies on top of [font=Courier New]volume[/font].
-[*][font=Courier New]kind[/font]: [font=Courier New]'swing'[/font] or [font=Courier New]'hit'[/font].
-[*][font=Courier New]tag[/font]: the vanilla sound id it answers, or [font=Courier New]nil[/font] from [font=Courier New]playSwing[/font] and [font=Courier New]playHit[/font].
-[*][font=Courier New]weapon[/font]: one of [font=Courier New]WEAPON[/font], or [font=Courier New]nil[/font] if unknown.
-[*][font=Courier New]weaponId[/font]: the record id of the weapon swung or hit with. It is [font=Courier New]nil[/font] for bare hands, a creature's own attack, and sounds from [font=Courier New]playSwing[/font] and [font=Courier New]playHit[/font].
-[*][font=Courier New]armor[/font]: one of [font=Courier New]ARMOR[/font], for a hit.
-[*][font=Courier New]attackType[/font]: one of [font=Courier New]I.Combat.ATTACK_TYPES[/font], for a hit by a melee weapon, or when one was asked for.
-[*][font=Courier New]layered[/font]: [font=Courier New]true[/font] when it plays on top of another sound (the vanilla body hit, or CSO's own hit) rather than in place of a vanilla one.
-[*][font=Courier New]underneath[/font]: [font=Courier New]true[/font] for the flesh sound played under a pure hit on armor.
-[*][font=Courier New]category[/font]: the sound group the file is from, such as [font=Courier New]armorHeavyBladePureHit[/font] or, for a ring, [font=Courier New]RingingBladePure[/font].
-[*][font=Courier New]via[/font]: what set it off. This is [font=Courier New]release[/font], [font=Courier New]early release[/font], [font=Courier New]text key[/font], [font=Courier New]hit[/font], [font=Courier New]unarmored hit[/font], [font=Courier New]emit[/font], [font=Courier New]event[/font], [font=Courier New]playSwing[/font] or [font=Courier New]playHit[/font].
-[/list]
-
-Returning [font=Courier New]false[/font] stops the sound and skips the older handlers. A vanilla sound CSO was replacing stays stopped either way.
-
-[code]local cso = I.CJCombatSoundsOverhaul
+cso.setWeaponKind('my_katana', cso.WEAPON.LongBladeTwoHanded)  -- nil to undo
+cso.addSwingGroupsHandler(function(recordId)
+    if recordId == 'my_katar' then return { cso.SWING_GROUPS.sharpMetal } end
+end)
 cso.addOnPlayHandler(function(info)
-    if info.kind == 'hit' and info.weapon == cso.WEAPON.HandToHand then
-        info.volume = info.volume * 0.5 -- softer punches
-    end
-    if info.kind == 'swing' and info.weaponId == 'my_katar' then
-        info.volume = info.volume * 0.75
-        cso.playSwing(cso.WEAPON.HandToHand) -- and a fist's whoosh with it
-    end
-    if info.file:find('hit69') then return false end -- never this one
+    if info.weaponId == 'my_katar' then info.volume = info.volume * 0.75 end
+    if info.file:find('hit69') then return false end  -- stop this one
 end)[/code]
 
-A sound played from inside a handler goes through the handlers too. The [font=Courier New]playSwing[/font] above has no [font=Courier New]weaponId[/font], so it doesn't set the handler off again.
-
-[size=4][b]From other scripts[/b][/size]
-
-Scripts that can't reach the actor's interface, such as global scripts, can send the actor an event:
-
 [list]
-[*][font=Courier New]CJCombatSoundsOverhaul_Emit[/font]: [font=Courier New]{ tag = 'SwishL' }[/font], plus any of [font=Courier New]emit[/font]'s options.
-[*][font=Courier New]CJCombatSoundsOverhaul_PlaySwing[/font]: [font=Courier New]{ weapon = ..., volume = ... }[/font].
-[*][font=Courier New]CJCombatSoundsOverhaul_PlayHit[/font]: [font=Courier New]{ armor = ..., volume = ..., weapon = ..., attackType = ... }[/font].
-[*][font=Courier New]CJCombatSoundsOverhaul_SetWeaponKind[/font]: [font=Courier New]{ recordId = ..., weapon = ... }[/font].
+[*][font=Courier New]emit(tag, options)[/font]: [font=Courier New]tag[/font] is one of [font=Courier New]TAGS[/font], the vanilla sound ids CSO answers. [font=Courier New]options[/font] can hold [font=Courier New]weapon[/font], [font=Courier New]attacker[/font], [font=Courier New]attackType[/font], [font=Courier New]volume[/font], [font=Courier New]pitch[/font], and [font=Courier New]force[/font] to play even when no group fits. It returns the file played, or [font=Courier New]nil[/font]. [font=Courier New]pickFile(tag, options)[/font] returns the file without playing it.
+[*][font=Courier New]playSwing(weapon, volume, attackType)[/font] and [font=Courier New]playHit(armor, volume, weapon, attackType)[/font] play a sound with no vanilla sound to replace. [font=Courier New]WEAPON[/font] and [font=Courier New]ARMOR[/font] are enums of names, and a misspelled name is an error.
+[*][font=Courier New]setWeaponKind(recordId, weapon)[/font] makes a weapon sound like another kind of [font=Courier New]WEAPON[/font].
+[*][font=Courier New]addSwingGroupsHandler(handler)[/font] lets a weapon keep its kind but swing with other groups. The handler gets the weapon's record id and returns a list of [font=Courier New]SWING_GROUPS[/font], or [font=Courier New]nil[/font] to leave the weapon to its kind. An empty list keeps the vanilla swish.
+[*][font=Courier New]addOnPlayHandler(handler)[/font] is called with [font=Courier New]info[/font] before every sound. [font=Courier New]file[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font] can be changed. The volume settings apply on top. It also has [font=Courier New]kind[/font] ('swing' or 'hit'), [font=Courier New]tag[/font], [font=Courier New]weapon[/font], [font=Courier New]weaponId[/font], [font=Courier New]armor[/font], [font=Courier New]attackType[/font], [font=Courier New]category[/font], [font=Courier New]layered[/font], [font=Courier New]underneath[/font] and [font=Courier New]via[/font]. Return [font=Courier New]false[/font] to stop the sound. The vanilla one stays stopped.
+[*][font=Courier New]getBody()[/font] and [font=Courier New]getCreatureClasses()[/font] say what the actor counts as. [font=Courier New]setDebug(true)[/font] logs every sound it plays.
+[*]Global scripts can send the actor these events: [font=Courier New]CJCombatSoundsOverhaul_Emit[/font] ([font=Courier New]tag[/font] plus [font=Courier New]emit[/font]'s options), [font=Courier New]_PlaySwing[/font], [font=Courier New]_PlayHit[/font] and [font=Courier New]_SetWeaponKind[/font], with the same arguments as fields.
 [/list]
 
-[size=4][b]Debugging[/b][/size]
-
-[font=Courier New]setDebug(true)[/font] prints every CSO sound the actor plays to [font=Courier New]openmw.log[/font], with:
-
-[list]
-[*]what set it off,
-[*]what the attack was made with, for example [font=Courier New]axe 2h[/font], [font=Courier New]staff 2h[/font], [font=Courier New]handToHand[/font], or [font=Courier New]natural[/font] for a creature's own attack,
-[*]what it landed on: the armor weight, or the actor's body,
-[*]the pitch,
-[*]whether a play handler stopped it.
-[/list]
-
-To try it in game, open the console and type [font=Courier New]luap[/font] to work on the player, or click an NPC and type [font=Courier New]luas[/font] to work on that NPC. Then run [font=Courier New]I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')[/font] or [font=Courier New]I.CJCombatSoundsOverhaul.playSwing('Staff', 1)[/font].
+To try it, click an NPC in the console, type [font=Courier New]luas[/font], then run [font=Courier New]I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')[/font].
 
 [size=5][b]Credits[/b][/size]
 
-[url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] and its sounds are by Jyggalagpuff, made from the assets of Impact Sounds. This mod only replaces its script, and needs it installed. The event-driven script is by Max Yari.
+[url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] and its sounds are by Jyggalagpuff, made from Impact Sounds. The script is by Max Yari.
