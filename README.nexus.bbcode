@@ -27,7 +27,7 @@ Every CSO sound plays at a slightly random pitch, between 0.9 and 1.1.
 
 [size=5][b]Settings[/b][/size]
 
-In [b]Options → Scripts → Combat Juice - Combat Sounds Overhaul[/b]:
+In [b]Options → Scripts → CJ: Combat Sounds Overhaul[/b]:
 
 [list]
 [*][b]Hit Volume[/b], from 0 to 1: every hit sound this mod plays, including the rings and the flesh under armor hits.
@@ -86,7 +86,7 @@ A thrust only counts as one for a melee attack made with a weapon.
 
 [size=5][b]Sounds for kinds of creatures[/b][/size]
 
-Sounds put in a folder named for a class of creature play on top of every hit such a creature takes, whatever hits it. The folders go in [font=Courier New]Sound/Fx/Item/CSOCreature/[/font], in this mod or any mod loaded after it:
+Sounds put in a folder named for a class of creature play on top of every hit such a creature takes, whatever hits it. The folders go in [font=Courier New]Sound/Fx/Item/CJCreature/[/font], in this mod or any mod loaded after it:
 
 [list]
 [*][font=Courier New]Ghost[/font], [font=Courier New]Skeleton[/font] and [font=Courier New]Metal[/font], from what the actor's body is: ghosts, spectres and spirits; skeletons, liches and bonelords; Dwemer machines.
@@ -116,7 +116,7 @@ Every hit that takes health also plays the body hit, "Health Damage" ([font=Cour
 
 [size=5][b]For developers[/b][/size]
 
-Every NPC, creature and the player has [font=Courier New]I.CombatSoundsOverhaul[/font]. Everything it plays, plays on that actor.
+Every NPC, creature and the player has [font=Courier New]I.CJCombatSoundsOverhaul[/font]. Everything it plays, plays on that actor.
 
 [size=4][b]Swapping a vanilla sound[/b][/size]
 
@@ -124,17 +124,17 @@ Pass [font=Courier New]emit[/font] a vanilla sound id, and CSO does what it does
 
 [code]local I = require('openmw.interfaces')
 
-I.CombatSoundsOverhaul.emit('Heavy Armor Hit')
+I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')
 
 -- A hit by a particular weapon, or a swing with one
-I.CombatSoundsOverhaul.emit('Heavy Armor Hit', { weapon = someWarhammer })
-I.CombatSoundsOverhaul.emit('Weapon Swish', { weapon = someDagger, volume = 0.8, pitch = 1.1 })
+I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit', { weapon = someWarhammer })
+I.CJCombatSoundsOverhaul.emit('Weapon Swish', { weapon = someDagger, volume = 0.8, pitch = 1.1 })
 
 -- What a hit on no armor does: a CSO impact for the actor's body on top, the vanilla sound left alone
-I.CombatSoundsOverhaul.emit('Health Damage')
+I.CJCombatSoundsOverhaul.emit('Health Damage')
 
 -- A creature's own swing has no CSO sound; force draws from all of CSO's swings instead
-I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
+I.CJCombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 
 [list]
 [*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold:
@@ -157,7 +157,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 [*][font=Courier New]ARMOR[/font]: [font=Courier New]Unarmored[/font] (also a creature of flesh), [font=Courier New]Light[/font], [font=Courier New]Medium[/font], [font=Courier New]Heavy[/font], [font=Courier New]Metal[/font] for a creature of metal like a Dwemer machine, [font=Courier New]Bone[/font] for skeletons, liches and bonelords, and [font=Courier New]Ghost[/font] for ghosts, spectres and spirits.
 [/list]
 
-[code]local cso = I.CombatSoundsOverhaul
+[code]local cso = I.CJCombatSoundsOverhaul
 
 cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
 cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
@@ -176,7 +176,7 @@ cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thru
 
 CSO goes by a weapon's type. A mod whose weapon should sound like another kind can say so by record id:
 
-[code]local cso = I.CombatSoundsOverhaul
+[code]local cso = I.CJCombatSoundsOverhaul
 cso.setWeaponKind('my_katana', cso.WEAPON.LongBladeTwoHanded)
 cso.setWeaponKind('my_katana', nil) -- back to what its record says[/code]
 
@@ -220,7 +220,7 @@ end)[/code]
 
 Returning [font=Courier New]false[/font] stops the sound and skips the older handlers. A vanilla sound CSO was replacing stays stopped either way.
 
-[code]local cso = I.CombatSoundsOverhaul
+[code]local cso = I.CJCombatSoundsOverhaul
 cso.addOnPlayHandler(function(info)
     if info.kind == 'hit' and info.weapon == cso.WEAPON.HandToHand then
         info.volume = info.volume * 0.5 -- softer punches
@@ -239,10 +239,10 @@ A sound played from inside a handler goes through the handlers too. The [font=Co
 Scripts that can't reach the actor's interface, such as global scripts, can send the actor an event:
 
 [list]
-[*][font=Courier New]CombatSoundsOverhaul_Emit[/font]: [font=Courier New]{ tag = 'SwishL' }[/font], plus any of [font=Courier New]emit[/font]'s options.
-[*][font=Courier New]CombatSoundsOverhaul_PlaySwing[/font]: [font=Courier New]{ weapon = ..., volume = ... }[/font].
-[*][font=Courier New]CombatSoundsOverhaul_PlayHit[/font]: [font=Courier New]{ armor = ..., volume = ..., weapon = ..., attackType = ... }[/font].
-[*][font=Courier New]CombatSoundsOverhaul_SetWeaponKind[/font]: [font=Courier New]{ recordId = ..., weapon = ... }[/font].
+[*][font=Courier New]CJCombatSoundsOverhaul_Emit[/font]: [font=Courier New]{ tag = 'SwishL' }[/font], plus any of [font=Courier New]emit[/font]'s options.
+[*][font=Courier New]CJCombatSoundsOverhaul_PlaySwing[/font]: [font=Courier New]{ weapon = ..., volume = ... }[/font].
+[*][font=Courier New]CJCombatSoundsOverhaul_PlayHit[/font]: [font=Courier New]{ armor = ..., volume = ..., weapon = ..., attackType = ... }[/font].
+[*][font=Courier New]CJCombatSoundsOverhaul_SetWeaponKind[/font]: [font=Courier New]{ recordId = ..., weapon = ... }[/font].
 [/list]
 
 [size=4][b]Debugging[/b][/size]
@@ -257,7 +257,7 @@ Scripts that can't reach the actor's interface, such as global scripts, can send
 [*]whether a play handler stopped it.
 [/list]
 
-To try it in game, open the console and type [font=Courier New]luap[/font] to work on the player, or click an NPC and type [font=Courier New]luas[/font] to work on that NPC. Then run [font=Courier New]I.CombatSoundsOverhaul.emit('Heavy Armor Hit')[/font] or [font=Courier New]I.CombatSoundsOverhaul.playSwing('Staff', 1)[/font].
+To try it in game, open the console and type [font=Courier New]luap[/font] to work on the player, or click an NPC and type [font=Courier New]luas[/font] to work on that NPC. Then run [font=Courier New]I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')[/font] or [font=Courier New]I.CJCombatSoundsOverhaul.playSwing('Staff', 1)[/font].
 
 [size=5][b]Credits[/b][/size]
 

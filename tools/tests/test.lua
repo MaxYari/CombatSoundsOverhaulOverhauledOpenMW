@@ -151,7 +151,7 @@ local function union(...)
 end
 
 print('\n== loading ==')
-check(script.interfaceName == 'CombatSoundsOverhaul', 'provides I.CombatSoundsOverhaul')
+check(script.interfaceName == 'CJCombatSoundsOverhaul', 'provides I.CJCombatSoundsOverhaul')
 check(#stub.playBlendedHandlers == 1, 'hooks the animation controller')
 check(#(stub.textKeyHandlers.sound or {}) == 1, 'listens to "sound" text keys')
 check(#stub.hitHandlers == 1, 'adds an onHit handler')
@@ -630,8 +630,8 @@ stub.rightHand = SWORD
 check(inSet(SWORD_SWINGS, api.pickFile('SwishL')) and api.pickFile('miss') == nil, 'pickFile')
 check(#api.TAGS == 8, 'TAGS lists the eight vanilla sounds')
 stub.reset()
-script.eventHandlers.CombatSoundsOverhaul_Emit({ tag = 'SwishS' })
-check(inSet(SWORD_SWINGS, lastFile()), 'the CombatSoundsOverhaul_Emit event does the same')
+script.eventHandlers.CJCombatSoundsOverhaul_Emit({ tag = 'SwishS' })
+check(inSet(SWORD_SWINGS, lastFile()), 'the CJCombatSoundsOverhaul_Emit event does the same')
 local swingsHeard = {}
 for _, typeName in ipairs({ 'ShortBladeOneHand', 'LongBladeOneHand', 'LongBladeTwoHand', 'BluntOneHand', 'AxeTwoHand',
     'SpearTwoWide', 'BluntTwoWide', 'MarksmanThrown' }) do
@@ -763,8 +763,8 @@ check(not pcall(api.playHit, 'Chainmail') and not pcall(api.playHit, ARMOR.Heavy
 check(not pcall(api.emit, 'Heavy Armor Hit', { attackType = 'stab' }) and not pcall(api.pickFile, 'Heavy Armor Hit', { attackType = 9 }),
     'so is a bad attack type for emit and pickFile')
 stub.reset()
-script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9, attackType = THRUST })
-script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
+script.eventHandlers.CJCombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9, attackType = THRUST })
+script.eventHandlers.CJCombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
 local swingPlayed = table.remove(stub.filesPlayed, 1)
 table.remove(stub.infos, 1)
 local eventHit = roles()
@@ -885,9 +885,9 @@ end
 
 print('\n== creature sounds ==')
 local CREATURE_FILES = {
-    'sound/fx/item/csocreature/ghost/wail1.wav', 'sound/fx/item/csocreature/ghost/wail2.ogg',
-    'sound/fx/item/csocreature/skeleton/rattle.wav', 'sound/fx/item/csocreature/undead/moan.wav',
-    'sound/fx/item/csocreature/daedra/hiss.wav', 'sound/fx/item/csocreature/daedra/notes.txt',
+    'sound/fx/item/cjcreature/ghost/wail1.wav', 'sound/fx/item/cjcreature/ghost/wail2.ogg',
+    'sound/fx/item/cjcreature/skeleton/rattle.wav', 'sound/fx/item/cjcreature/undead/moan.wav',
+    'sound/fx/item/cjcreature/daedra/hiss.wav', 'sound/fx/item/cjcreature/daedra/notes.txt',
 }
 local vfsBefore = stub.vfsPaths
 stub.vfsPaths = {}
@@ -905,7 +905,7 @@ local function creatureHit(bloodType, record, isCreature, attack)
         stub.enginePlays('Health Damage')
         s.engineHandlers.onUpdate(0.016)
         for _, i in ipairs(stub.infos) do
-            if i.file:find('csocreature', 1, true) then heard[#heard + 1] = i end
+            if i.file:find('cjcreature', 1, true) then heard[#heard + 1] = i end
         end
     end
     local classes = s.interface.getCreatureClasses()
@@ -920,18 +920,18 @@ local function allOf(heard, class, files)
     return true
 end
 local heard, classes = creatureHit(1, { name = 'Ancestor Ghost', model = 'r\\ancestorghost.nif', type = UNDEAD }, true)
-check(allOf(heard, 'Ghost', { ['sound/fx/item/csocreature/ghost/wail1.wav'] = true, ['sound/fx/item/csocreature/ghost/wail2.ogg'] = true }),
+check(allOf(heard, 'Ghost', { ['sound/fx/item/cjcreature/ghost/wail1.wav'] = true, ['sound/fx/item/cjcreature/ghost/wail2.ogg'] = true }),
     'a ghost gets a sound from Ghost/ on top of every hit, and not from Undead/')
 check(#classes == 2 and classes[1] == 'Ghost' and classes[2] == 'Undead', 'getCreatureClasses: Ghost, then Undead')
 heard = creatureHit(1, { name = 'Skeleton Warrior', model = 'r\\skeleton.nif', type = UNDEAD }, true,
     { successful = true, damage = { health = 5 }, attacker = creature })
-check(allOf(heard, 'Skeleton', { ['sound/fx/item/csocreature/skeleton/rattle.wav'] = true }),
+check(allOf(heard, 'Skeleton', { ['sound/fx/item/cjcreature/skeleton/rattle.wav'] = true }),
     'a skeleton gets Skeleton/, whatever hits it: claws too')
 heard = creatureHit(0, { name = 'Bonewalker', model = 'r\\bonewalker.nif', type = UNDEAD }, true)
-check(allOf(heard, 'Undead', { ['sound/fx/item/csocreature/undead/moan.wav'] = true }),
+check(allOf(heard, 'Undead', { ['sound/fx/item/cjcreature/undead/moan.wav'] = true }),
     'a bonewalker bleeds, so it gets Undead/ from its type')
 heard = creatureHit(0, { name = 'Dremora', model = 'r\\dremora.nif', type = stub.CREATURE_TYPE.Daedra }, true)
-check(allOf(heard, 'Daedra', { ['sound/fx/item/csocreature/daedra/hiss.wav'] = true }), 'a dremora gets Daedra/, sounds only')
+check(allOf(heard, 'Daedra', { ['sound/fx/item/cjcreature/daedra/hiss.wav'] = true }), 'a dremora gets Daedra/, sounds only')
 local machineClasses
 heard, machineClasses = creatureHit(2, { name = 'Steam Centurion', model = 'r\\steam_centurion.nif', type = stub.CREATURE_TYPE.Creatures }, true)
 check(#heard == 0 and machineClasses[1] == 'Metal' and machineClasses[2] == 'Creatures',
@@ -990,7 +990,7 @@ check(#stub.infos == 2 and stub.infos[1].weaponId == nil and stub.infos[2].weapo
 k.setWeaponKind('MY_KATAR_01', nil)
 check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' })),
     'setWeaponKind with nil goes back to its record')
-kinds.eventHandlers.CombatSoundsOverhaul_SetWeaponKind({ recordId = 'my_katar_01', weapon = k.WEAPON.Spear })
+kinds.eventHandlers.CJCombatSoundsOverhaul_SetWeaponKind({ recordId = 'my_katar_01', weapon = k.WEAPON.Spear })
 check(sameSet(draws('Weapon Swish', { weapon = katar }, k), expected('swing', { 'plain', 'bladeMetal', 'heavyMetal' })),
     'so does the SetWeaponKind event')
 check(not pcall(k.setWeaponKind, 'my_katar_01', 'Knuckles') and not pcall(k.setWeaponKind, nil, k.WEAPON.Blunt),
@@ -1054,14 +1054,14 @@ stub.sections = {}
 local nearbyActor = stub.eventTaker('nearby_npc')
 stub.nearby.actors = { stub.selfObject, nearbyActor }
 local player = loadScript(true)
-local group = stub.settingsGroups.SettingsCombatSoundsOverhaul
-local volumeSection = stub.sections.SettingsCombatSoundsOverhaul
-check(stub.settingsPages.CombatSoundsOverhaul and group and group.page == 'CombatSoundsOverhaul' and group.permanentStorage,
+local group = stub.settingsGroups.SettingsCJCombatSoundsOverhaul
+local volumeSection = stub.sections.SettingsCJCombatSoundsOverhaul
+check(stub.settingsPages.CJCombatSoundsOverhaul and group and group.page == 'CJCombatSoundsOverhaul' and group.permanentStorage,
     "the player's copy registers the settings page and its group")
 check(volumeSection:get('hitVolume') == 1 and volumeSection:get('swingVolume') == 1, 'hit and swing volume start at 1')
 volumeSection:set('hitVolume', 0.5)
 local sent = nearbyActor.events[#nearbyActor.events]
-check(sent and sent.name == 'CombatSoundsOverhaul_Volumes' and sent.data.hit == 0.5 and sent.data.swing == 1,
+check(sent and sent.name == 'CJCombatSoundsOverhaul_Volumes' and sent.data.hit == 0.5 and sent.data.swing == 1,
     'a change goes to the actors nearby, not to the player itself')
 stub.reset()
 player.interface.playHit(player.interface.ARMOR.Light, 0.8)
@@ -1077,10 +1077,10 @@ local allHalf = #stub.filesPlayed > 0
 for _, p in ipairs(stub.filesPlayed) do allHalf = allHalf and math.abs(p.options.volume - 0.5) < 1e-9 end
 check(allHalf, 'and Hit Volume to every sound of a hit: the flesh under it and the rings too')
 local asker = stub.eventTaker('asking_npc')
-player.eventHandlers.CombatSoundsOverhaul_WhatVolumes(asker)
-check(asker.events[1] and asker.events[1].name == 'CombatSoundsOverhaul_Volumes' and asker.events[1].data.hit == 0.5
+player.eventHandlers.CJCombatSoundsOverhaul_WhatVolumes(asker)
+check(asker.events[1] and asker.events[1].name == 'CJCombatSoundsOverhaul_Volumes' and asker.events[1].data.hit == 0.5
     and asker.events[1].data.swing == 0.25, 'the player answers an actor that asks')
-player.eventHandlers.CombatSoundsOverhaul_Volumes({ hit = 0.1, swing = 0.1 })
+player.eventHandlers.CJCombatSoundsOverhaul_Volumes({ hit = 0.1, swing = 0.1 })
 stub.reset()
 player.interface.playSwing(player.interface.WEAPON.Axe)
 check(stub.filesPlayed[1].options.volume == 0.25, 'and keeps its own settings over what others send')
@@ -1089,19 +1089,19 @@ local playerActor = stub.eventTaker('player')
 stub.nearby.players = { playerActor }
 local other = loadScript(true)
 other.engineHandlers.onActive()
-check(playerActor.events[1] and playerActor.events[1].name == 'CombatSoundsOverhaul_WhatVolumes'
+check(playerActor.events[1] and playerActor.events[1].name == 'CJCombatSoundsOverhaul_WhatVolumes'
     and playerActor.events[1].data == stub.selfObject, 'an actor asks the player for the volumes as it becomes active')
 stub.reset()
 other.interface.playSwing(other.interface.WEAPON.Axe)
 check(stub.filesPlayed[1].options.volume == 1, 'and plays at full volume until it hears back')
-other.eventHandlers.CombatSoundsOverhaul_Volumes(asker.events[1].data)
+other.eventHandlers.CJCombatSoundsOverhaul_Volumes(asker.events[1].data)
 stub.reset()
 other.interface.playSwing(other.interface.WEAPON.Axe)
 other.interface.playHit(other.interface.ARMOR.Light)
 check(stub.filesPlayed[1].options.volume == 0.25 and stub.filesPlayed[2].options.volume == 0.5, 'then with the settings')
 local notAPlayer = stub.eventTaker('someone')
-other.eventHandlers.CombatSoundsOverhaul_WhatVolumes(notAPlayer)
-check(#notAPlayer.events == 0 and stub.settingsGroups.SettingsCombatSoundsOverhaul == group,
+other.eventHandlers.CJCombatSoundsOverhaul_WhatVolumes(notAPlayer)
+check(#notAPlayer.events == 0 and stub.settingsGroups.SettingsCJCombatSoundsOverhaul == group,
     'only the player answers, and only the player registers settings')
 stub.nearby.players, stub.nearby.actors, stub.sections = {}, {}, {}
 
