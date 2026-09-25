@@ -51,7 +51,7 @@ local onUpdate = script.engineHandlers.onUpdate
 -- The categories as they were sorted by ear, written out again so the script's tables are checked against them.
 local function range(a, b) local t = {} for n = a, b do t[#t + 1] = n end return t end
 local SWINGS = {
-    plain = range(21, 23), sharpMetal = range(1, 6), metal = range(11, 16), ringingBlade = range(24, 26),
+    plain = range(21, 23), sharpMetal = range(1, 6), bladeMetal = range(11, 16), ringingBladeMetal = range(24, 26),
     heavyMetal = (function() local t = range(7, 10); for n = 17, 20 do t[#t + 1] = n end; return t end)(),
 }
 local HITS = {
@@ -100,7 +100,7 @@ local function isHit(f) return f ~= nil and f:find('^sound/fx/item/csohit/') ~= 
 
 local W = function(typeName) return stub.weapon('w', typeName) end
 local SWORD = W('LongBladeOneHand')
-local SWORD_SWINGS = expected('swing', { 'ringingBlade', 'metal' })
+local SWORD_SWINGS = expected('swing', { 'ringingBladeMetal', 'bladeMetal' })
 local DEFAULT_FLESH = expected('hit', { 'flesh', 'punchyFlesh' })
 local DEFAULT_ARMOR = expected('hit', { 'armorFlesh', 'armorCrunchyFlesh' })
 
@@ -280,19 +280,37 @@ local function pools(tag, cases, iface)
 end
 local npc, creature = stub.npc(), stub.creature()
 pools('Weapon Swish', {
-    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBlade' }, folder = 'swing' },
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBlade', 'metal' }, folder = 'swing' },
-    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'metal' }, folder = 'swing' },
+    { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'sharpMetal', 'ringingBladeMetal' }, folder = 'swing' },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
+    { label = 'claymore', weapon = 'LongBladeTwoHand', categories = { 'bladeMetal' }, folder = 'swing' },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'warhammer', weapon = 'BluntTwoClose', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'war axe', weapon = 'AxeOneHand', categories = { 'heavyMetal' }, folder = 'swing' },
     { label = 'battle axe', weapon = 'AxeTwoHand', categories = { 'heavyMetal' }, folder = 'swing' },
-    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'metal', 'ringingBlade', 'plain' }, folder = 'swing' },
-    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'metal' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', categories = { 'plain' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = CHOP, categories = { 'plain' }, folder = 'swing' },
+    { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'bladeMetal', 'ringingBladeMetal' }, folder = 'swing' },
+    { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal' }, folder = 'swing' },
+    { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'plain' }, folder = 'swing' },
     { label = 'fists', attacker = npc, categories = { 'plain' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
+local SPEAR_THRUST_SWINGS = expected('swing', { 'bladeMetal', 'ringingBladeMetal' })
+local function spearSwing(attackName, early)
+    stub.reset()
+    stub.rightHand = W('SpearTwoWide')
+    stub.windUp(attackName)
+    stub.enginePlays('Weapon Swish')
+    if early then onUpdate(0.016) end
+    stub.release(attackName)
+    return lastFile()
+end
+check(inSet(SPEAR_THRUST_SWINGS, spearSwing('thrust')), 'a spear thrust whooshes with metallic and ringing blades')
+check(inSet(expected('swing', { 'plain' }), spearSwing('chop')) and inSet(expected('swing', { 'plain' }), spearSwing('slash')),
+    'its chops and slashes with the plain whooshes')
+check(inSet(SPEAR_THRUST_SWINGS, spearSwing('thrust', true)), 'an early released thrust is still a thrust')
+stub.rightHand = nil
 check(api.pickFile('Weapon Swish', { weapon = W('MarksmanBow') }) == nil, 'Weapon Swish by a bow: nothing')
 local fleshCases = {
     { label = 'dagger', weapon = 'ShortBladeOneHand', categories = { 'fleshySlice', 'flesh' } },
@@ -426,7 +444,7 @@ check(inSet(DEFAULT_ARMOR, api.emit('Heavy Armor Hit')), 'emit plays a CSO hit f
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
 check(inSet(expected('swing', { 'plain' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
-check(inSet(expected('swing', { 'sharpMetal', 'ringingBlade' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
+check(inSet(expected('swing', { 'sharpMetal', 'ringingBladeMetal' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
     'options.weapon picks for that weapon')
 stub.selfObject.isCreature = true
 check(api.emit('Weapon Swish') == nil, "a creature's own swing plays nothing")
@@ -518,7 +536,7 @@ check(not pcall(function() return WEAPON.Swrod end), 'a misspelled enum name is 
 stub.reset()
 local f = api.playSwing(WEAPON.ShortBlade, 0.5)
 local played = stub.filesPlayed[1]
-check(inSet(expected('swing', { 'sharpMetal', 'ringingBlade' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
+check(inSet(expected('swing', { 'sharpMetal', 'ringingBladeMetal' }), f) and played.file == f, 'playSwing plays a swing for the weapon')
 check(played.options.volume == 0.5 and played.options.pitch >= 0.9 and played.options.pitch <= 1.1,
     'at the volume given and a random pitch')
 check(#stub.stopped == 0, 'and stops nothing')
@@ -526,6 +544,10 @@ stub.reset()
 api.playSwing(WEAPON.Staff)
 check(stub.filesPlayed[1].options.volume == 1, 'volume is 1 when not given')
 check(api.playSwing(WEAPON.Natural) == nil and api.playSwing(WEAPON.Bow) == nil, 'weapons with no swings play nothing')
+local spearSeen = {}
+for _ = 1, 2000 do spearSeen[api.playSwing(WEAPON.Spear, 1, THRUST)] = true end
+check(sameSet(spearSeen, expected('swing', { 'bladeMetal', 'ringingBladeMetal' })), 'playSwing takes the attack type: a spear thrust')
+check(not pcall(api.playSwing, WEAPON.Spear, 1, 'jab'), 'a bad attack type for playSwing is an error')
 check(not pcall(api.playSwing, 'Swrod') and not pcall(api.playSwing, WEAPON.Axe, -1)
     and not pcall(api.playSwing, WEAPON.Axe, 'loud'), 'an unknown weapon or a bad volume is an error')
 local hitCases = {
@@ -555,9 +577,9 @@ check(not pcall(api.playHit, 'Chainmail') and not pcall(api.playHit, ARMOR.Heavy
 check(not pcall(api.emit, 'Heavy Armor Hit', { attackType = 'stab' }) and not pcall(api.pickFile, 'Heavy Armor Hit', { attackType = 9 }),
     'so is a bad attack type for emit and pickFile')
 stub.reset()
-script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9 })
+script.eventHandlers.CombatSoundsOverhaul_PlaySwing({ weapon = WEAPON.Spear, volume = 0.9, attackType = THRUST })
 script.eventHandlers.CombatSoundsOverhaul_PlayHit({ armor = ARMOR.Heavy, volume = 0.4, weapon = WEAPON.Spear, attackType = THRUST })
-check(inSet(expected('swing', { 'metal', 'ringingBlade', 'plain' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
+check(inSet(expected('swing', { 'bladeMetal', 'ringingBladeMetal' }), stub.filesPlayed[1].file) and stub.filesPlayed[1].options.volume == 0.9
     and inSet(expected('hit', { 'armorFlesh', 'armorStab' }), stub.filesPlayed[2].file) and stub.filesPlayed[2].options.volume == 0.4,
     'the PlaySwing and PlayHit events do the same')
 
@@ -574,7 +596,8 @@ stub.enginePlays('Weapon Swish')
 stub.release('chop')
 local info = seen[1]
 check(info and info.kind == 'swing' and info.tag == 'Weapon Swish' and info.weapon == 'LongBlade' and info.armor == nil
-    and info.via == 'release' and info.layered == false and info.file == lastFile(), 'a handler hears about a swing before it plays')
+    and info.attackType == CHOP and info.via == 'release' and info.layered == false and info.file == lastFile(),
+    'a handler hears about a swing before it plays, with its attack type')
 seen = {}
 stub.reset()
 stub.hit({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand'), type = CHOP, sourceType = 'melee' })

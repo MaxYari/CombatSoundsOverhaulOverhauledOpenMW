@@ -53,10 +53,10 @@ local DUPLICATES = {
 -- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them. A file can
 -- be in more than one category.
 local SWING_CATEGORIES = {
-    plain = { { 21, 23 } },            -- generic, no metal: hand-to-hand, staves, spears
-    sharpMetal = { { 1, 6 } },         -- short blades, daggers
-    metal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves, spears
-    ringingBlade = { { 24, 26 } },     -- like metal, but sharper and with a ring: long blades, daggers, spears
+    plain = { { 21, 23 } },                 -- generic, no metal: hand-to-hand, staves, spears' swings
+    sharpMetal = { { 1, 6 } },              -- short blades, daggers
+    bladeMetal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves, spears' thrusts
+    ringingBladeMetal = { { 24, 26 } },     -- like bladeMetal, sharper and with a ring: long blades, daggers, spears' thrusts
     heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, warhammers, axes
 }
 -- Hit68, Hit97 and Hit98 aren't sorted yet.
@@ -84,13 +84,14 @@ local HIT_CATEGORIES = {
 -- longBladeThrust), then the plain ones, then `thrust`. `default` covers the rest; without one, the vanilla sound
 -- stays. Every file of every listed category is in the draw.
 local SWING_SOUNDS = {
-    shortBlade = { 'sharpMetal', 'ringingBlade' },
-    longBlade1 = { 'ringingBlade', 'metal' },
-    longBlade2 = { 'metal' },
+    shortBlade = { 'sharpMetal', 'ringingBladeMetal' },
+    longBlade1 = { 'ringingBladeMetal', 'bladeMetal' },
+    longBlade2 = { 'bladeMetal' },
     blunt = { 'heavyMetal' },
     axe = { 'heavyMetal' },
-    spear = { 'metal', 'ringingBlade', 'plain' },
-    staff = { 'plain', 'metal' },
+    spear = { 'plain' },
+    spearThrust = { 'bladeMetal', 'ringingBladeMetal' },
+    staff = { 'plain', 'bladeMetal' },
     thrown = { 'sharpMetal', 'plain' },
     handToHand = { 'plain' },
 }
@@ -236,7 +237,8 @@ local RIGHT_HAND = types.Actor.EQUIPMENT_SLOT.CarriedRight
 local isPlayer = types.Player.objectIsInstance(self.object)
 
 local debugLog = false
-local windupUntil = nil -- simulation time the current wind-up stops being watched
+local windupUntil = nil  -- simulation time the current wind-up stops being watched
+local windupAttack = nil -- chop, slash or thrust: the attack being wound up
 local pendingHit = nil  -- the last successful hit, whose sounds onUpdate looks for
 
 local function inEntries(n, entries)
@@ -338,7 +340,13 @@ end
 
 -- Whether an attack counts as a thrust: a melee attack made with a weapon, of I.Combat.ATTACK_TYPES.Thrust. An
 -- unarmed creature's attack type only says which of its three attacks it used, so that never counts.
-local THRUST = I.Combat.ATTACK_TYPES.Thrust
+local ATTACK_TYPES = I.Combat.ATTACK_TYPES
+local THRUST = ATTACK_TYPES.Thrust
+-- An attack animation's keys start with the attack: "thrust start", "thrust max attack". "shoot" has no type.
+local ATTACK_BY_NAME = { chop = ATTACK_TYPES.Chop, slash = ATTACK_TYPES.Slash, thrust = ATTACK_TYPES.Thrust }
+local function attackTypeOf(key)
+    return ATTACK_BY_NAME[key:match('^(%a+) ')]
+end
 local function isThrust(weapon, attackType)
     return attackType == THRUST and weapon ~= nil and weapon.hands ~= nil
 end
@@ -376,7 +384,7 @@ end
 -- A random CSO file for a vanilla tag and an attack made with `weapon`
 local function pickFor(tag, weapon, force, attackType)
     local folder = TAGS[tag:lower()]
-    if folder == 'swing' then return pickFrom('swing', SWING_SOUNDS, weapon, force) end
+    if folder == 'swing' then return pickFrom('swing', SWING_SOUNDS, weapon, force, attackType) end
     if folder then return pickFrom('hit', HIT_SOUNDS[landsOn(tag)], weapon, force, attackType) end
     return nil
 end
@@ -436,11 +444,7 @@ local function swap(tag, options, via, weapon, attackType)
             weapon = swingingWith()
         end
     end
-    if folder == 'swing' then
-        attackType = nil
-    elseif attackType == nil then
-        attackType = options.attackType
-    end
+    if attackType == nil then attackType = options.attackType end
     local file = pickFor(tag, weapon, options.force, attackType)
     if not file then return nil end
 
@@ -465,14 +469,7 @@ local function checkWeapon(weapon, caller)
     return kind
 end
 
-local function playSwing(weapon, volume)
-    local kind = checkWeapon(weapon, 'playSwing')
-    volume = checkVolume(volume, 'playSwing')
-    local file = pickFrom('swing', SWING_SOUNDS, kind)
-    return file and play(file, 'swing', nil, kind, nil, 'playSwing', volume)
-end
 
-local ATTACK_TYPES = I.Combat.ATTACK_TYPES
 local function checkAttackType(attackType, caller)
     if attackType ~= nil and attackType ~= ATTACK_TYPES.Chop and attackType ~= ATTACK_TYPES.Slash
         and attackType ~= ATTACK_TYPES.Thrust then
@@ -480,6 +477,14 @@ local function checkAttackType(attackType, caller)
             .. tostring(attackType), 3)
     end
     return attackType
+end
+
+local function playSwing(weapon, volume, attackType)
+    local kind = checkWeapon(weapon, 'playSwing')
+    volume = checkVolume(volume, 'playSwing')
+    attackType = checkAttackType(attackType, 'playSwing')
+    local file = pickFrom('swing', SWING_SOUNDS, kind, nil, attackType)
+    return file and play(file, 'swing', nil, kind, nil, 'playSwing', volume, nil, attackType)
 end
 
 local function playHit(armor, volume, weapon, attackType)
@@ -505,9 +510,10 @@ I.AnimationController.addPlayBlendedAnimationHandler(function(_, options)
     local startKey, stopKey = options.startKey or '', options.stopKey or ''
     if endsWith(startKey, ' max attack') then
         windupUntil = nil
-        swapIfPlaying(WEAPON_SWISH, 'release')
+        swapIfPlaying(WEAPON_SWISH, 'release', nil, attackTypeOf(startKey))
     elseif endsWith(stopKey, ' max attack') and lookup(SWING_SOUNDS, swingingWith()) then
         windupUntil = core.getSimulationTime() + WINDUP_WATCH
+        windupAttack = attackTypeOf(stopKey)
     end
 end)
 
@@ -542,7 +548,7 @@ local function onUpdate()
         end
     end
     if windupUntil then
-        if swapIfPlaying(WEAPON_SWISH, 'early release') or core.getSimulationTime() > windupUntil then
+        if swapIfPlaying(WEAPON_SWISH, 'early release', nil, windupAttack) or core.getSimulationTime() > windupUntil then
             windupUntil = nil
         end
     end
@@ -588,6 +594,7 @@ return {
         --- Plays a CSO swing on this actor for a weapon, at a random pitch between 0.9 and 1.1.
         -- @param weapon One of WEAPON
         -- @param #number volume (optional) Volume multiplier, 1 by default
+        -- @param attackType (optional) One of I.Combat.ATTACK_TYPES. A spear's thrust whooshes differently.
         -- @return #string VFS path of the sound played, or nil if nothing played (Natural, Bow and Crossbow have no
         -- swings, and a play handler can stop it)
         playSwing = playSwing,
@@ -606,7 +613,8 @@ return {
         --   tag: the vanilla sound id it answers, or nil when played through playSwing / playHit
         --   weapon: one of WEAPON, or nil when unknown
         --   armor: one of ARMOR for a hit
-        --   attackType: one of I.Combat.ATTACK_TYPES for a hit by a melee weapon (and when asked for), otherwise nil
+        --   attackType: one of I.Combat.ATTACK_TYPES for a swing or a melee hit made with a weapon (and when asked
+        --   for), otherwise nil
         --   layered: true when it plays over the vanilla body hit rather than in place of a vanilla sound
         --   via: what set it off (release, early release, text key, hit, unarmored hit, emit, event, playSwing, playHit)
         -- Returning false stops the sound and skips the older handlers. A vanilla sound it answers stays stopped.
@@ -624,7 +632,8 @@ return {
         -- @param #string tag One of TAGS, any case
         -- @param #table options (optional)
         --   weapon, attacker: what the attack is made with, as for a hit (a weapon object, and who holds it)
-        --   attackType: one of I.Combat.ATTACK_TYPES, for a hit. A thrust with a weapon picks the stabs.
+        --   attackType: one of I.Combat.ATTACK_TYPES. A thrust with a weapon picks the stabs, and a spear's thrust
+        --   whooshes differently.
         --   force: play even when no category answers the attack, drawing from all of CSO's swings or hits
         --   volume, pitch: pitch is random between 0.9 and 1.1 otherwise
         -- @return #string VFS path of the sound played, or nil if nothing played
@@ -653,8 +662,8 @@ return {
     eventHandlers = {
         -- { tag = ..., weapon = ..., attacker = ..., force = ..., volume = ..., pitch = ... }, as for emit
         CombatSoundsOverhaul_Emit = function(data) swap(tostring(data.tag), data, 'event') end,
-        -- { weapon = one of WEAPON, volume = ... }
-        CombatSoundsOverhaul_PlaySwing = function(data) playSwing(data.weapon, data.volume) end,
+        -- { weapon = one of WEAPON, volume = ..., attackType = one of I.Combat.ATTACK_TYPES }
+        CombatSoundsOverhaul_PlaySwing = function(data) playSwing(data.weapon, data.volume, data.attackType) end,
         -- { armor = one of ARMOR, volume = ..., weapon = one of WEAPON, attackType = one of I.Combat.ATTACK_TYPES }
         CombatSoundsOverhaul_PlayHit = function(data) playHit(data.armor, data.volume, data.weapon, data.attackType) end,
     },
