@@ -18,9 +18,37 @@ If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installin
 [size=5][b]What gets replaced[/b][/size]
 
 [list]
-[*][b]Weapon Swish[/b], the swing of any melee or thrown attack, when the attacker holds something in their right hand. It is swapped as the attack is released.
-[*][b]SwishS, SwishM, SwishL[/b], played by the [font=Courier New]Sound: Swish[/font] keys in creature attack animations, when the creature holds something in its right hand.
+[*][b]Weapon Swish[/b], the swing of every melee and thrown attack, hand-to-hand included. It is swapped as the attack is released. A creature's own attacks, its claws and bites, keep the vanilla swish.
+[*][b]SwishS, SwishM, SwishL[/b], played by the [font=Courier New]Sound: Swish[/font] keys in creature attack animations, when the creature holds a weapon.
 [*][b]Light, Medium and Heavy Armor Hit[/b], whenever a hit lands on a piece of armor.
+[/list]
+
+Every CSO sound plays at a slightly random pitch, between 0.85 and 1.
+
+[size=5][b]How the sounds are picked[/b][/size]
+
+CSO's sounds are sorted by ear into groups, and each attack draws from every group that suits it.
+
+[b]Swings, by weapon:[/b]
+
+[list]
+[*]Short blades: sharp metallic whooshes.
+[*]One-handed long blades: ringing blade whooshes and generic metallic ones.
+[*]Maces and one-handed axes: heavy metallic whooshes.
+[*]Two-handed swords, warhammers and battle axes: heavy metallic whooshes, plus the more generic heavy ones.
+[*]Spears: generic heavy metallic whooshes.
+[*]Staves: plain, metallic and generic heavy whooshes.
+[*]Thrown weapons: sharp metallic and plain whooshes.
+[*]Hand-to-hand: plain whooshes.
+[/list]
+
+[b]Hits, by what they land on:[/b]
+
+[list]
+[*]Heavy armor: heavy armor impacts, with a ringing blade impact added for blades.
+[*]Medium armor: armor impacts.
+[*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
+[*]Dwemer machines count as heavy armor. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
 [/list]
 
 [size=5][b]The body hit sound[/b][/size]
@@ -28,40 +56,60 @@ If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installin
 Every hit that takes health also plays the body hit, "Health Damage" ([font=Courier New]Sound\Fx\body hit.wav[/font]), whether it lands on armor or not. This mod ships a simplified version of it in place of the vanilla one, and it always plays.
 
 [list]
-[*]On armor, one of CSO's hits plays on top of it.
-[*]On an unarmored spot or a creature, one of CSO's fleshy impacts ([font=Courier New]Hit1[/font] to [font=Courier New]Hit10[/font] and [font=Courier New]Hit25[/font] to [font=Courier New]Hit29[/font]) plays on top of it. The original CSO left these hits with the vanilla sound alone.
+[*]On armor, CSO's impact replaces the vanilla armor sound and plays on top of the body hit.
+[*]Where there's no armor, CSO's impact is layered on top of the body hit. The original CSO left those hits with the body hit alone.
 [/list]
 
 [size=5][b]Differences from the original[/b][/size]
 
 [list]
-[*]Hits that don't land on armor get a fleshy CSO impact on top of the body hit.
+[*]Sounds are picked for the weapon and for what it hits. The original drew any swing and any hit at random.
+[*]Hits that don't land on armor get a CSO impact on top of the body hit.
+[*]Hand-to-hand swings get plain CSO whooshes. The original left them vanilla.
 [*]Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
-[*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders, so any sound file added there joins the rotation. [font=Courier New]Swing6[/font] is left out, because it's a near copy of [font=Courier New]Swing5[/font].
+[*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders and sorting them into groups by the number in their names. A few are left out:
+[list]
+[*][font=Courier New]Swing6[/font], a near copy of [font=Courier New]Swing5[/font].
+[*][font=Courier New]Hit41[/font] to [font=Courier New]Hit56[/font], [font=Courier New]Hit69[/font], [font=Courier New]Hit71[/font], [font=Courier New]Hit80[/font] and [font=Courier New]Hit81[/font], armor impacts with flesh in them.
+[*][font=Courier New]Hit68[/font], [font=Courier New]Hit97[/font] and [font=Courier New]Hit98[/font], which aren't sorted yet.
+[/list]
 [*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
 [/list]
 
 [size=5][b]For developers[/b][/size]
 
-Every NPC, creature and the player has [font=Courier New]I.CombatSoundsOverhaul[/font]. Pass it a vanilla sound id and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a random CSO sound in its place.
+Every NPC, creature and the player has [font=Courier New]I.CombatSoundsOverhaul[/font]. Pass it a vanilla sound id and CSO does what it does when it catches that sound: it stops the vanilla sound on that actor if it is playing, and plays a CSO sound picked for the attack in its place.
 
 [code]local I = require('openmw.interfaces')
 
 I.CombatSoundsOverhaul.emit('Heavy Armor Hit')
-I.CombatSoundsOverhaul.emit('Weapon Swish', { volume = 0.8, pitch = 1.1 })
 
--- What an unarmored hit does: a fleshy CSO impact on top, the vanilla sound left alone
+-- A hit by a particular weapon, or a swing with one
+I.CombatSoundsOverhaul.emit('Heavy Armor Hit', { weapon = someWarhammer })
+I.CombatSoundsOverhaul.emit('Weapon Swish', { weapon = someDagger, volume = 0.8, pitch = 1.1 })
+
+-- What a hit on no armor does: a CSO impact for the actor's body on top, the vanilla sound left alone
 I.CombatSoundsOverhaul.emit('Health Damage')
 
--- Swing ids need something in the actor's right hand, the same as an engine swing.
--- force skips that check, e.g. for an unarmed attack you want a CSO swing for:
+-- A creature's own swing has no CSO sound; force draws from all of CSO's swings instead
 I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 
 [list]
-[*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold [font=Courier New]force[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font].
+[*][font=Courier New]emit(tag, options)[/font] returns the path of the sound it played, or [font=Courier New]nil[/font] if it played nothing. [font=Courier New]options[/font] is optional and can hold:
+[list]
+[*][font=Courier New]weapon[/font] and [font=Courier New]attacker[/font]: what the attack is made with. Without them, a swing uses the actor's right hand, and a hit uses the general sounds for what it lands on.
+[*][font=Courier New]force[/font]: play something even when CSO has no sound for the attack.
+[*][font=Courier New]volume[/font] and [font=Courier New]pitch[/font]. The pitch is random between 0.85 and 1 otherwise.
+[/list]
 [*][font=Courier New]TAGS[/font] lists the ids CSO answers: [font=Courier New]Weapon Swish[/font], [font=Courier New]SwishS[/font], [font=Courier New]SwishM[/font], [font=Courier New]SwishL[/font], [font=Courier New]Light Armor Hit[/font], [font=Courier New]Medium Armor Hit[/font], [font=Courier New]Heavy Armor Hit[/font] and [font=Courier New]Health Damage[/font], in any case.
-[*][font=Courier New]pickFile(tag)[/font] returns a random CSO file for an id without playing it.
-[*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes to [font=Courier New]openmw.log[/font], along with what caught it, what the attack was made with (for example [font=Courier New]axe 2h[/font], [font=Courier New]staff 2h[/font], [font=Courier New]handToHand[/font], or [font=Courier New]natural[/font] for a creature's own attack) and, for a hit, the weight of the armor on the spot it landed.
+[*][font=Courier New]pickFile(tag, options)[/font] returns the CSO file [font=Courier New]emit[/font] would pick, without playing it.
+[*][font=Courier New]setDebug(true)[/font] prints every swap the actor makes to [font=Courier New]openmw.log[/font], with:
+[list]
+[*]what caught it,
+[*]what the attack was made with, for example [font=Courier New]axe 2h[/font], [font=Courier New]staff 2h[/font], [font=Courier New]handToHand[/font], or [font=Courier New]natural[/font] for a creature's own attack,
+[*]what it landed on (the armor weight, or the actor's body),
+[*]the pitch.
+[/list]
 [*]Scripts that can't reach the actor's interfaces, such as global scripts, can send it an event: [font=Courier New]actor:sendEvent('CombatSoundsOverhaul_Emit', { tag = 'SwishL' })[/font].
 [/list]
 

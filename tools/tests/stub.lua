@@ -48,8 +48,12 @@ function M.hit(attack)
     for i = #M.hitHandlers, 1, -1 do M.hitHandlers[i](attack) end
 end
 
+-- The actor the script runs on. Set isCreature on it for a creature; bloodType is read once per script load.
 local selfObject = { recordId = 'test_actor' }
+M.selfObject = selfObject
 M.isPlayer = false
+M.bloodType = 0
+selfObject.type = { record = function() return { bloodType = M.bloodType } end }
 
 M.WEAPON_TYPE = {
     ShortBladeOneHand = 0, LongBladeOneHand = 1, LongBladeTwoHand = 2, BluntOneHand = 3, BluntTwoClose = 4,
