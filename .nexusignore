@@ -12,4 +12,5 @@ __pycache__/
 # docs and images (the README lives on the Nexus page itself)
 /README.md
 /README.nexus.bbcode
+img/
 imgs/

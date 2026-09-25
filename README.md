@@ -22,7 +22,6 @@ New to OpenMW mods? [Read this first](https://modding-openmw.com/tips/installing
 
 - Weapon swishes and armor hit sounds are replaced with CSO's, at a slightly random pitch. Fists and creatures' claws and bites keep the vanilla swish.
 - Hits that land on no armor get a CSO impact on top of the body hit.
-- The body hit (`Sound\Fx\body hit.wav`) is replaced with a simpler version.
 
 **Swings:**
 

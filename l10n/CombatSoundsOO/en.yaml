@@ -1,0 +1,9 @@
+# The settings page. Its text is written out in English in Scripts/CSO/SoundManager.lua and used as the keys, so a
+# language without an entry still reads right.
+"Combat Sounds Overhaul Overhauled": "Combat Sounds Overhaul Overhauled"
+"Combat Sounds Overhaul's swings and hits, picked for the weapon and what it hits.": "Combat Sounds Overhaul's swings and hits, picked for the weapon and what it hits."
+"Volume": "Volume"
+"Hit Volume": "Hit Volume"
+"From 0 to 1. Every CSO hit sound, including the layers and the flesh under armor hits.": "From 0 to 1. Every CSO hit sound, including the layers and the flesh under armor hits."
+"Swing Volume": "Swing Volume"
+"From 0 to 1. Every CSO whoosh.": "From 0 to 1. Every CSO whoosh."
