@@ -15,7 +15,7 @@ If this is your first OpenMW mod, [read this first](https://modding-openmw.com/t
 
 ## What gets replaced
 
-- **Weapon Swish**, the swing of every melee and thrown attack, hand-to-hand included. It is swapped as the attack is released. A creature's own attacks, its claws and bites, keep the vanilla swish.
+- **Weapon Swish**, the swing of every melee and thrown attack with a weapon. It is swapped as the attack is released. Hand-to-hand swings and a creature's own attacks, its claws and bites, keep the vanilla swish.
 - **SwishS, SwishM, SwishL**, played by the `Sound: Swish` keys in creature attack animations, when the creature holds a weapon.
 - **Light, Medium and Heavy Armor Hit**, whenever a hit lands on a piece of armor.
 
@@ -36,7 +36,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 **Swings, by weapon:**
 
-Every weapon has some plain whooshes in its mix.
+Every weapon has some plain whooshes in its mix. Hand-to-hand swings keep the vanilla swish, at the pitch the game gives it.
 
 - Short blades: sharp metallic whooshes, ringing ones and ringing blade ones, and 30% of the time a plain one.
 - One-handed long blades: ringing blade whooshes and metallic blade ones, and 30% of the time a plain one.
@@ -46,7 +46,6 @@ Every weapon has some plain whooshes in its mix.
 - Staves, and spears' chops and slashes: plain whooshes half the time, metallic blade ones 40% and heavy metallic ones 10%.
 - A spear's thrust: metallic blade and ringing blade whooshes, and 30% of the time a plain one.
 - Thrown weapons: sharp metallic, ringing and plain whooshes.
-- Hand-to-hand: plain whooshes and the vanilla ones, whichever files the game's swish sounds play.
 
 **Hits, by what they land on:**
 
@@ -82,7 +81,6 @@ Every hit that takes health also plays the body hit, "Health Damage" (`Sound\Fx\
 
 - Sounds are picked for the weapon and for what it hits. The original drew any swing and any hit at random.
 - Hits that don't land on armor get a CSO impact on top of the body hit.
-- Hand-to-hand swings get plain CSO whooshes, mixed in with the vanilla ones. The original left them vanilla.
 - Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
 - The sounds are found by listing CSO's `Sound\Fx\Item\CSOSwing` and `Sound\Fx\Item\CSOHit` folders and sorting them into groups by the number in their names. A file in no group never plays. `Swing6`, a near copy of `Swing5`, is one of these.
 - Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
@@ -135,7 +133,7 @@ cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, a
 cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)
 ```
 
-- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings.
+- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `HandToHand` plays one of the vanilla swish files.
 - `getBody()` returns what the actor's body counts as when a hit lands on no armor: `Unarmored`, `Metal`, `Bone` or `Ghost`.
 - The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
 - An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
@@ -162,7 +160,7 @@ end)
 ```
 
 - Return a list of `SWING_GROUPS` for the weapon to swing with, or `nil` to leave it to older handlers and then to its kind. Handlers run newest first.
-- An empty list leaves the vanilla swish alone.
+- An empty list leaves the vanilla swish alone, and so does `vanilla` when it comes up.
 - A name that isn't in `SWING_GROUPS` is left out, with a warning in `openmw.log`.
 - It's per actor too. It runs on every swing, so keep it quick.
 

@@ -95,7 +95,7 @@ local SWING_SOUNDS = {
     spearThrust = { 'bladeMetal', 'ringingBladeMetal', 'plain' },
     staff = { 'plain', 'bladeMetal', 'heavyMetal' },
     thrown = { 'sharpMetal', 'sharpMetalRinging', 'plain' },
-    handToHand = { 'plain', 'vanilla' },
+    handToHand = { 'vanilla' }, -- a fist's swing keeps the engine's swish; playSwing plays one of its files
 }
 -- SWING_SOUNDS keys that don't draw from all their files together: a group named here comes up this often, and the
 -- key's other groups share the rest, drawn from together as usual
@@ -590,11 +590,14 @@ local function swingGroupsOf(weaponId)
     return nil
 end
 
--- Whether an attack has CSO swings, from its weapon's own groups or its kind's
+-- Whether an attack has CSO swings, from its weapon's own groups or its kind's. vanilla alone isn't one: the swap
+-- leaves the engine's swish be.
 local function hasSwings(attack)
-    local groups = swingGroupsOf(attack.weaponId)
-    if groups then return #groups > 0 end
-    return lookup(SWING_SOUNDS, attack.weapon) ~= nil
+    local groups = swingGroupsOf(attack.weaponId) or lookup(SWING_SOUNDS, attack.weapon)
+    for _, group in ipairs(groups or {}) do
+        if group ~= 'vanilla' then return true end
+    end
+    return false
 end
 
 -- A random CSO file for a vanilla tag and an attack
@@ -756,6 +759,8 @@ local function swap(tag, options, via, attack)
     end
     local file = pickFor(tag, attack, options.force)
     if not file then return nil end
+    -- A vanilla swish drawn for a swing: the engine's own is playing already, at the pitch it gave the attack
+    if folder == 'swing' and categoryOf[file] == 'vanilla' then return nil end
 
     if folder ~= 'body' then sound.stopSound3d(tag, self) end
     if folder == 'swing' then
@@ -975,8 +980,8 @@ return {
 
         --- Adds a handler that picks the swing groups a weapon uses, in place of the ones its kind would. It gets the
         -- weapon's record id on each swing with it, and returns a list of SWING_GROUPS, or nil to leave the weapon
-        -- to the older handlers and then to its kind. An empty list leaves the vanilla swish alone. Newest handler
-        -- first. It is per actor, like the rest of the interface.
+        -- to the older handlers and then to its kind. An empty list leaves the vanilla swish alone, and so does
+        -- vanilla when it's drawn. Newest handler first. It is per actor, like the rest of the interface.
         -- @usage cso.addSwingGroupsHandler(function(recordId)
         --     if recordId == 'my_katar' then return { cso.SWING_GROUPS.sharpMetal } end
         -- end)

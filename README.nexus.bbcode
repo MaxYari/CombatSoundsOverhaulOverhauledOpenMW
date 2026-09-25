@@ -18,7 +18,7 @@ If this is your first OpenMW mod, [url=https://modding-openmw.com/tips/installin
 [size=5][b]What gets replaced[/b][/size]
 
 [list]
-[*][b]Weapon Swish[/b], the swing of every melee and thrown attack, hand-to-hand included. It is swapped as the attack is released. A creature's own attacks, its claws and bites, keep the vanilla swish.
+[*][b]Weapon Swish[/b], the swing of every melee and thrown attack with a weapon. It is swapped as the attack is released. Hand-to-hand swings and a creature's own attacks, its claws and bites, keep the vanilla swish.
 [*][b]SwishS, SwishM, SwishL[/b], played by the [font=Courier New]Sound: Swish[/font] keys in creature attack animations, when the creature holds a weapon.
 [*][b]Light, Medium and Heavy Armor Hit[/b], whenever a hit lands on a piece of armor.
 [/list]
@@ -42,7 +42,7 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 [b]Swings, by weapon:[/b]
 
-Every weapon has some plain whooshes in its mix.
+Every weapon has some plain whooshes in its mix. Hand-to-hand swings keep the vanilla swish, at the pitch the game gives it.
 
 [list]
 [*]Short blades: sharp metallic whooshes, ringing ones and ringing blade ones, and 30% of the time a plain one.
@@ -53,7 +53,6 @@ Every weapon has some plain whooshes in its mix.
 [*]Staves, and spears' chops and slashes: plain whooshes half the time, metallic blade ones 40% and heavy metallic ones 10%.
 [*]A spear's thrust: metallic blade and ringing blade whooshes, and 30% of the time a plain one.
 [*]Thrown weapons: sharp metallic, ringing and plain whooshes.
-[*]Hand-to-hand: plain whooshes and the vanilla ones, whichever files the game's swish sounds play.
 [/list]
 
 [b]Hits, by what they land on:[/b]
@@ -99,7 +98,6 @@ Every hit that takes health also plays the body hit, "Health Damage" ([font=Cour
 [list]
 [*]Sounds are picked for the weapon and for what it hits. The original drew any swing and any hit at random.
 [*]Hits that don't land on armor get a CSO impact on top of the body hit.
-[*]Hand-to-hand swings get plain CSO whooshes, mixed in with the vanilla ones. The original left them vanilla.
 [*]Armor hits are replaced whatever the struck actor holds. The original replaced them only on actors holding something in their right hand. It made that check on whoever the sound played on, and for a hit that is the one being hit.
 [*]The sounds are found by listing CSO's [font=Courier New]Sound\Fx\Item\CSOSwing[/font] and [font=Courier New]Sound\Fx\Item\CSOHit[/font] folders and sorting them into groups by the number in their names. A file in no group never plays. [font=Courier New]Swing6[/font], a near copy of [font=Courier New]Swing5[/font], is one of these.
 [*]Nothing listens for sounds any more, only for the engine's own attacks, animation keys and hits. So a vanilla swish or armor hit that another mod plays itself stays vanilla. Such a mod can use the interface below instead.
@@ -156,7 +154,7 @@ cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, a
 cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)[/code]
 
 [list]
-[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings.
+[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]HandToHand[/font] plays one of the vanilla swish files.
 [*][font=Courier New]getBody()[/font] returns what the actor's body counts as when a hit lands on no armor: [font=Courier New]Unarmored[/font], [font=Courier New]Metal[/font], [font=Courier New]Bone[/font] or [font=Courier New]Ghost[/font].
 [*]The volume multiplier is 1 if left out. The pitch is random between 0.9 and 1.1.
 [*]An unknown name is an error, and so is a misspelled enum field such as [font=Courier New]cso.WEAPON.Swrod[/font].
@@ -183,7 +181,7 @@ end)[/code]
 
 [list]
 [*]Return a list of [font=Courier New]SWING_GROUPS[/font] for the weapon to swing with, or [font=Courier New]nil[/font] to leave it to older handlers and then to its kind. Handlers run newest first.
-[*]An empty list leaves the vanilla swish alone.
+[*]An empty list leaves the vanilla swish alone, and so does [font=Courier New]vanilla[/font] when it comes up.
 [*]A name that isn't in [font=Courier New]SWING_GROUPS[/font] is left out, with a warning in [font=Courier New]openmw.log[/font].
 [*]It's per actor too. It runs on every swing, so keep it quick.
 [/list]

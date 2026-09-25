@@ -203,8 +203,14 @@ stub.rightHand = nil
 stub.windUp('chop')
 stub.enginePlays('Weapon Swish')
 stub.release('chop')
-check(#stub.filesPlayed == 1 and inSet(expected('swing', { 'plain', 'vanilla' }), lastFile()),
-    'a hand-to-hand swing gets a plain whoosh or a vanilla one')
+check(#stub.filesPlayed == 0 and #stub.stopped == 0 and stub.playing['weapon swish'],
+    "a hand-to-hand swing keeps the engine's own swish")
+stub.reset()
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+onUpdate(0.016)
+stub.release('chop')
+check(#stub.filesPlayed == 0 and #stub.stopped == 0, 'released early too')
 stub.reset()
 stub.selfObject.isCreature = true
 stub.windUp('chop')
@@ -370,7 +376,7 @@ pools('Weapon Swish', {
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'ringingBladeMetal', 'bladeMetal', 'plain' }, folder = 'swing' },
     { label = 'staff', weapon = 'BluntTwoWide', categories = { 'plain', 'bladeMetal', 'heavyMetal' }, folder = 'swing' },
     { label = 'throwing star', weapon = 'MarksmanThrown', categories = { 'sharpMetal', 'sharpMetalRinging', 'plain' }, folder = 'swing' },
-    { label = 'fists', attacker = npc, categories = { 'plain', 'vanilla' }, folder = 'swing' },
+    { label = 'fists', attacker = npc, categories = { 'vanilla' }, folder = 'swing' },
 })
 check(api.pickFile('Weapon Swish', { attacker = creature }) == nil, "Weapon Swish by a creature's own attack: nothing")
 -- Most weapons draw the plain whooshes by a share of their own, not by how many files they are
@@ -602,7 +608,10 @@ check(inSet(union(HEAVY_HIT, DEFAULT_FLESH), api.emit('Heavy Armor Hit')) and #p
     'emit plays what a hit on armor would: the flesh under it, and 75% of the time the armor hit')
 check(stub.stopped[1] == 'Heavy Armor Hit', 'and stops the vanilla one, as a real swap would')
 check(isHit(api.emit('light armor hit')), 'tags are case insensitive')
-check(inSet(expected('swing', { 'plain', 'vanilla' }), api.emit('Weapon Swish')), 'an unarmed swing is a hand-to-hand one')
+stub.reset()
+stub.enginePlays('Weapon Swish')
+check(api.emit('Weapon Swish') == nil and #stub.stopped == 0 and #stub.filesPlayed == 0,
+    'an unarmed swing is a hand-to-hand one, left vanilla')
 check(inSet(expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' }), api.emit('Weapon Swish', { weapon = W('ShortBladeOneHand') })),
     'options.weapon picks for that weapon')
 stub.selfObject.isCreature = true
@@ -675,9 +684,10 @@ for _, s in ipairs(swingNames) do
     local line = swingWith(W(s[1]))
     check(line:find('(release, ' .. s[2] .. ', ', 1, true) ~= nil, s[1] .. ' swings as ' .. s[2])
 end
-line = swingWith(nil)
-check(line:find('(release, handToHand, plain, pitch ', 1, true) ~= nil or line:find('(release, handToHand, vanilla, pitch ', 1, true) ~= nil,
-    'no weapon swings as handToHand')
+check(swingWith(nil) == '', 'a swing with no weapon prints nothing, as it plays nothing')
+stub.reset()
+line = logged(function() api.playSwing(api.WEAPON.HandToHand) end)
+check(line:find('(playSwing, handToHand, vanilla, pitch ', 1, true) ~= nil, 'playSwing for fists plays a vanilla swish')
 for _ = 1, 50 do
     line = hitBy({ successful = true, damage = { health = 5 }, attacker = npc, weapon = W('AxeTwoHand') }, 'Heavy Armor Hit')
     if line:find(', underneath, pitch ', 1, true) then break end
@@ -873,24 +883,21 @@ for _, c in ipairs({ { WEAPON.LongBlade, THRUST, 'a longsword thrust' }, { WEAPO
     check(rate == 0, c[3] .. ' never rings')
 end
 
-print('\n== vanilla whooshes for fists ==')
+print('\n== vanilla swishes for fists ==')
 local fists = loadScript(true)
-local vanillaDraws, fistDraws = 0, 6000
-for _ = 1, fistDraws do
-    if inSet(expected('swing', { 'vanilla' }), fists.interface.pickFile('Weapon Swish', { attacker = npc })) then
-        vanillaDraws = vanillaDraws + 1
-    end
+local fistFiles, fistRuns = {}, 6000
+for _ = 1, fistRuns do
+    local f = fists.interface.playSwing(fists.interface.WEAPON.HandToHand)
+    fistFiles[f] = (fistFiles[f] or 0) + 1
 end
--- Weapon Swish and SwishM share swoosh 1, so there are three vanilla files to CSO's three plain ones
-check(vanillaDraws / fistDraws > 0.45 and vanillaDraws / fistDraws < 0.55,
-    string.format('a vanilla file is as likely as a plain one, each counted once (%.3f)', vanillaDraws / fistDraws))
+local evenly = count(fistFiles) == 3
+for _, n in pairs(fistFiles) do evenly = evenly and math.abs(n / fistRuns - 1 / 3) < 0.04 end
+-- Weapon Swish and SwishM share swoosh 1, which would come up half the time if it counted twice
+check(evenly and sameSet(fistFiles, expected('swing', { 'vanilla' })),
+    "playSwing for fists plays the three vanilla swish files, each as often")
 stub.reset()
-stub.rightHand = nil
-repeat
-    stub.reset()
-    fists.interface.emit('Weapon Swish')
-until inSet(expected('swing', { 'vanilla' }), lastFile())
-check(stub.infos[1].category == 'vanilla', "a vanilla whoosh's category is vanilla")
+fists.interface.playSwing(fists.interface.WEAPON.HandToHand)
+check(stub.infos[1].category == 'vanilla', "a vanilla swish's category is vanilla")
 
 print('\n== weapon kinds set by other mods ==')
 local kinds = loadScript(true)
