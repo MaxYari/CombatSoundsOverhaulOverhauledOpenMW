@@ -351,10 +351,41 @@ check(#stub.filesPlayed == 1 and #stub.stopped == 0 and inSet(expected('hit', { 
 bodyHit(2, W('ShortBladeOneHand'))
 check(inSet(expected('hit', { 'armorHeavy', 'armorHeavyBlade' }), lastFile()), 'and blades ring on it like on heavy armor')
 local bone = bodyHit(1, W('BluntOneHand'))
-check(#stub.filesPlayed == 0 and stub.playing['health damage'] == true, 'a skeleton or ghost (bone dust) keeps only the body hit')
+check(#stub.filesPlayed == 0 and stub.playing['health damage'] == true, 'a skeleton (bone dust) keeps only the body hit')
 check(bone.interface.pickFile('Health Damage') == nil, 'nothing answers a bone body yet')
 bodyHit(0, W('BluntOneHand'))
 check(inSet(expected('hit', { 'crunchyFlesh', 'punchyFlesh' }), lastFile()), 'blood is flesh')
+-- What the body counts as, from the blood type and, for ghosts, the record's name and model
+local function bodyOf(bloodType, name, model)
+    stub.bloodType, stub.record = bloodType, { name = name, model = model, id = 'test_creature' }
+    local body = loadScript(true).interface.getBody()
+    stub.bloodType, stub.record = 0, {}
+    return body
+end
+local bodies = {
+    { 0, 'Nix-Hound', 'r\\nixhound.nif', 'Unarmored' },
+    { 2, 'Steam Centurion', 'r\\steam_centurion.nif', 'Metal' },
+    { 1, 'Skeleton Champion', 'r\\skeleton.nif', 'Bone' },
+    { 1, 'Bonelord', 'r\\bonelord.nif', 'Bone' },
+    { 1, 'Bonewolf', 'r\\undeadwolf_2.nif', 'Bone' },
+    { 1, 'Ancestor Ghost', 'r\\ancestorghost.nif', 'Ghost' },
+    { 1, 'Kanit Ashurnisammis', 'r\\ancestorghost.nif', 'Ghost' },
+    { 1, 'Dahrk Mezalf', 'r\\dwarvenspecter.nif', 'Ghost' },
+    { 1, 'Gateway Haunt', 'r\\ancestorghost.nif', 'Ghost' },
+    { 1, 'Welkynd Spirit', 'pc\\cr\\pc_ayl_guard_01.nif', 'Ghost' },
+    { 5, 'Ancestor Ghost', 'r\\ancestorghost.nif', 'Ghost' },
+    { 5, 'Scamp', 'r\\scamp.nif', 'Unarmored' },
+    { 0, 'Ghostgate Guard', 'b\\guard.nif', 'Unarmored' },
+}
+for _, b in ipairs(bodies) do
+    local got = bodyOf(b[1], b[2], b[3])
+    check(got == b[4], string.format('%s (blood type %d) is %s (%s)', b[2], b[1], b[4], tostring(got)))
+end
+stub.bloodType, stub.record = 1, { name = 'Ancestor Ghost', model = 'r\\ancestorghost.nif' }
+local ghost = bodyHit(1, W('BluntOneHand'))
+check(#stub.filesPlayed == 0 and ghost.interface.getBody() == 'Ghost', 'a ghost keeps only the body hit')
+stub.record = {}
+check(ghost.interface.playHit(ghost.interface.ARMOR.Ghost) == nil, 'nothing answers a ghost yet')
 -- each load takes over the stubbed engine hooks, so go back to a fresh copy of the main one
 script = loadScript(true)
 api, onUpdate = script.interface, script.engineHandlers.onUpdate

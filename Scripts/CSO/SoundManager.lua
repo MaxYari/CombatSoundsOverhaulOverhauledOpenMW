@@ -116,8 +116,8 @@ local METAL_BODY_HIT_SOUNDS = {
     longBlade = { 'armorHeavy', 'armorHeavyBlade' },
     default = { 'armorHeavy' },
 }
--- What the hit lands on -> the table above that answers it. Bone (skeletons, ghosts) has no sounds yet, so it keeps
--- only the body hit.
+-- What the hit lands on -> the table above that answers it. Bone (skeletons, liches, bonelords) and ghosts have no
+-- sounds yet, so they keep only the body hit.
 local HIT_SOUNDS = {
     light = FLESH_HIT_SOUNDS,
     medium = FLESHY_ARMOR_HIT_SOUNDS,
@@ -158,6 +158,9 @@ local ARMOR_BY_TAG = {
 -- An actor's body, by its record's blood type: 1 is the bone dust of skeletons and ghosts, 2 the sparks of dwemer
 -- machines. Anything else bleeds.
 local BODY_BY_BLOOD = { [1] = 'bone', [2] = 'metal' }
+-- Vanilla gives ghosts the same bone dust as skeletons. An actor that doesn't bleed red and has one of these in its
+-- name, model or record id is a ghost instead; that also catches ghosts a mod moved to a blood type of their own.
+local GHOST_WORDS = { 'ghost', 'spectre', 'specter', 'spirit', 'haunt', 'wraith', 'phantom', 'apparition' }
 
 -- Weapon.TYPE -> what CSO calls it: the family, and the hands it takes
 local Weapon = types.Weapon
@@ -202,7 +205,8 @@ local ARMOR_BY_NAME = {
     Medium = 'medium',
     Heavy = 'heavy',
     Metal = 'metal',     -- a creature of metal: dwemer machines
-    Bone = 'bone',       -- skeletons and ghosts, which have no sounds yet
+    Bone = 'bone',       -- skeletons, liches, bonelords, which have no sounds yet
+    Ghost = 'ghost',     -- ghosts, spectres, spirits, which have no sounds yet
 }
 local function invert(t)
     local inverted = {}
@@ -301,7 +305,17 @@ end
 local body = nil
 local function bodyType()
     if not body then
-        body = BODY_BY_BLOOD[self.object.type.record(self.object).bloodType] or 'flesh'
+        local record = self.object.type.record(self.object)
+        body = BODY_BY_BLOOD[record.bloodType] or 'flesh'
+        if record.bloodType ~= 0 and body ~= 'metal' then
+            local words = ((record.name or '') .. ' ' .. (record.model or '') .. ' ' .. (record.id or '')):lower()
+            for _, word in ipairs(GHOST_WORDS) do
+                if words:find(word, 1, true) then
+                    body = 'ghost'
+                    break
+                end
+            end
+        end
     end
     return body
 end
@@ -511,8 +525,13 @@ return {
         WEAPON = enum(WEAPON_BY_NAME),
 
         --- What a hit lands on: Unarmored (also a creature of flesh), Light, Medium, Heavy, Metal (a creature of
-        -- metal, like a dwemer machine), Bone (skeletons and ghosts, which have no sounds yet).
+        -- metal, like a dwemer machine), Bone (skeletons, liches, bonelords) and Ghost (ghosts, spectres, spirits).
+        -- Bone and Ghost have no sounds yet.
         ARMOR = enum(ARMOR_BY_NAME),
+
+        --- What this actor's body counts as when a hit lands on no armor: one of ARMOR, but only Unarmored (flesh and
+        -- blood), Metal, Bone or Ghost. Read from its blood type, and for ghosts its name and model.
+        getBody = function() return NAME_OF_SURFACE[bodyType()] end,
 
         --- Plays a CSO swing on this actor for a weapon, at a random pitch between 0.85 and 1.
         -- @param weapon One of WEAPON

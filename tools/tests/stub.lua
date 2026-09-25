@@ -53,7 +53,12 @@ local selfObject = { recordId = 'test_actor' }
 M.selfObject = selfObject
 M.isPlayer = false
 M.bloodType = 0
-selfObject.type = { record = function() return { bloodType = M.bloodType } end }
+M.record = {} -- name, model, id of the actor's record
+selfObject.type = {
+    record = function()
+        return { bloodType = M.bloodType, name = M.record.name, model = M.record.model, id = M.record.id }
+    end,
+}
 
 M.WEAPON_TYPE = {
     ShortBladeOneHand = 0, LongBladeOneHand = 1, LongBladeTwoHand = 2, BluntOneHand = 3, BluntTwoClose = 4,

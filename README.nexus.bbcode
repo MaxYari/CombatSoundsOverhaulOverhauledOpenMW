@@ -47,7 +47,8 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 [list]
 [*]Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
 [*]Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
-[*]Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
+[*]Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
+[*]Skeletons, liches and bonelords, and ghosts, spectres and spirits, have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
 [/list]
 
 [size=5][b]The body hit sound[/b][/size]
@@ -114,7 +115,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })[/code]
 
 [list]
 [*][font=Courier New]WEAPON[/font]: [font=Courier New]ShortBlade[/font], [font=Courier New]LongBlade[/font], [font=Courier New]LongBladeTwoHanded[/font], [font=Courier New]Blunt[/font], [font=Courier New]BluntTwoHanded[/font] (warhammers), [font=Courier New]Staff[/font], [font=Courier New]Spear[/font], [font=Courier New]Axe[/font], [font=Courier New]AxeTwoHanded[/font], [font=Courier New]Thrown[/font], [font=Courier New]Bow[/font], [font=Courier New]Crossbow[/font], [font=Courier New]HandToHand[/font], and [font=Courier New]Natural[/font] for a creature's own attack.
-[*][font=Courier New]ARMOR[/font]: [font=Courier New]Unarmored[/font] (also a creature of flesh), [font=Courier New]Light[/font], [font=Courier New]Medium[/font], [font=Courier New]Heavy[/font], [font=Courier New]Metal[/font] for a creature of metal like a Dwemer machine, and [font=Courier New]Bone[/font] for skeletons and ghosts.
+[*][font=Courier New]ARMOR[/font]: [font=Courier New]Unarmored[/font] (also a creature of flesh), [font=Courier New]Light[/font], [font=Courier New]Medium[/font], [font=Courier New]Heavy[/font], [font=Courier New]Metal[/font] for a creature of metal like a Dwemer machine, [font=Courier New]Bone[/font] for skeletons, liches and bonelords, and [font=Courier New]Ghost[/font] for ghosts, spectres and spirits.
 [/list]
 
 [code]local cso = I.CombatSoundsOverhaul
@@ -123,7 +124,8 @@ cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
 cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon[/code]
 
 [list]
-[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]Bone[/font] has no hits yet.
+[*]Both return the path of the sound played, or [font=Courier New]nil[/font] if nothing played. [font=Courier New]Natural[/font], [font=Courier New]Bow[/font] and [font=Courier New]Crossbow[/font] have no swings, and [font=Courier New]Bone[/font] and [font=Courier New]Ghost[/font] have no hits yet.
+[*][font=Courier New]getBody()[/font] returns what the actor's body counts as when a hit lands on no armor: [font=Courier New]Unarmored[/font], [font=Courier New]Metal[/font], [font=Courier New]Bone[/font] or [font=Courier New]Ghost[/font].
 [*]The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
 [*]An unknown name is an error, and so is a misspelled enum field such as [font=Courier New]cso.WEAPON.Swrod[/font].
 [/list]

@@ -40,7 +40,8 @@ CSO's sounds are sorted by ear into groups, and each attack draws from every gro
 
 - Medium and heavy armor: armor impacts with flesh or a crunch in them, since an armor hit only draws blood once it's through. Daggers and spears get stabs with a metal ring among them; other weapons get crunchy ones.
 - Light armor, an unarmored spot, or a creature of flesh and blood: flesh impacts for the weapon. Short blades slice and stab, long blades slice and cut, blunt weapons crunch and punch, spears stab, and fists punch. Everything else gets general flesh and punchy impacts.
-- Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades. Skeletons and ghosts have no sounds of their own yet, so they keep only the body hit.
+- Dwemer machines get clean heavy armor clanks, with a ringing blade impact added for blades.
+- Skeletons, liches and bonelords, and ghosts, spectres and spirits, have no sounds of their own yet, so they keep only the body hit. The game gives ghosts the same bone dust as skeletons, so they're told apart by their name and model.
 
 ## The body hit sound
 
@@ -97,7 +98,7 @@ I.CombatSoundsOverhaul.emit('Weapon Swish', { force = true })
 `playSwing` and `playHit` play a CSO sound straight away, without a vanilla sound to replace. What they play is chosen from two enums:
 
 - `WEAPON`: `ShortBlade`, `LongBlade`, `LongBladeTwoHanded`, `Blunt`, `BluntTwoHanded` (warhammers), `Staff`, `Spear`, `Axe`, `AxeTwoHanded`, `Thrown`, `Bow`, `Crossbow`, `HandToHand`, and `Natural` for a creature's own attack.
-- `ARMOR`: `Unarmored` (also a creature of flesh), `Light`, `Medium`, `Heavy`, `Metal` for a creature of metal like a Dwemer machine, and `Bone` for skeletons and ghosts.
+- `ARMOR`: `Unarmored` (also a creature of flesh), `Light`, `Medium`, `Heavy`, `Metal` for a creature of metal like a Dwemer machine, `Bone` for skeletons, liches and bonelords, and `Ghost` for ghosts, spectres and spirits.
 
 ```lua
 local cso = I.CombatSoundsOverhaul
@@ -106,7 +107,8 @@ cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)       -- weapon, volume multiplier
 cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt) -- armor, volume multiplier, and optionally the weapon
 ```
 
-- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Bone` has no hits yet.
+- Both return the path of the sound played, or `nil` if nothing played. `Natural`, `Bow` and `Crossbow` have no swings, and `Bone` and `Ghost` have no hits yet.
+- `getBody()` returns what the actor's body counts as when a hit lands on no armor: `Unarmored`, `Metal`, `Bone` or `Ghost`.
 - The volume multiplier is 1 if left out. The pitch is random between 0.85 and 1.
 - An unknown name is an error, and so is a misspelled enum field such as `cso.WEAPON.Swrod`.
 
