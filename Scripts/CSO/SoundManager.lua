@@ -69,14 +69,14 @@ local HIT_CATEGORIES = {
     -- bone
     stabPure = { 65, 77, 78 },
     cutPure = { { 11, 17 } },
-    BoneHit = { 79 },
+    BoneHit = { 72, 79 },
     -- armor
-    armorMediumPureHit = { { 41, 56 }, 71, 72 },
+    armorMediumPureHit = { { 41, 56 }, 71 },
     BluntBoneHit = { 80, 81 },
     BluntRingPure = { 69 },
     RingingBladePure = { { 18, 21 }, 30 },
-    armorHeavyBladePureHit = { { 22, 24 }, 31, 32, { 57, 60 }, 96 },
-    armorHeavyBluntPureHit = { { 33, 40 }, 84, 85, { 87, 95 }, { 97, 102 } },
+    armorHeavyBladePureHit = { { 22, 24 }, 31, 32, { 57, 60 }, 85, 96 },
+    armorHeavyBluntPureHit = { { 33, 40 }, 84, { 87, 95 }, { 97, 102 } },
     BluntHitPure = { 82, 83, 86 },
 }
 
