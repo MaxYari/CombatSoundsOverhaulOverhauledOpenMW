@@ -180,6 +180,21 @@ luajit tools/tests/test.lua
 CSO_DIR="<path to>/CSO2.0" luajit tools/tests/test.lua   # list the sounds from a real CSO install
 ```
 
+### Sorting the sounds
+
+The categories CSO's sounds are sorted into, which the script plays from, are the `SWING_CATEGORIES` and `HIT_CATEGORIES` tables in `Scripts/CSO/SoundManager.lua`. To sort them by ear, lay them out as folders of copies:
+
+```sh
+python3 tools/sound_sorting.py export   # sorting/swing/<category>/SwingN.wav, sorting/hit/<category>/HitN.wav
+python3 tools/sound_sorting.py import   # write the folders back into the two tables
+```
+
+- Move files between the folders. The number in a file's name is what counts.
+- A new folder is a new category. It still has to be added to one of the `*_SOUNDS` tables to be heard.
+- `_unused` holds the files in no category, which never play.
+
+The game never reads `sorting/`, and git ignores it, so the mod keeps playing CSO's own files.
+
 `.github/workflows/nexus-release.yml` runs those tests on every push to `main`. It packs the mod and uploads it to Nexus only when the last commit's message starts with `[nexus]`. Before the first release, fill in `NEXUS_PAGE`, `NEXUSMODS_FILE_ID` and `NEXUSMODS_MOD_ID` at the top of that file, and add the `NEXUSMODS_API_KEY` repository secret. The version published is the first `version = ...` in `Scripts/CSO/SoundManager.lua`.
 
 Enable the README → BBCode hook once per clone:

@@ -45,16 +45,13 @@ local SOUND_DIRS = {
 }
 local SOUND_EXTENSIONS = { wav = true, mp3 = true, ogg = true, flac = true }
 
--- Near copies of another CSO file, left out so that sound doesn't come up twice as often.
-local DUPLICATES = {
-    ['sound/fx/item/csoswing/swing6.wav'] = true, -- Swing5 trimmed a little shorter
-}
 
 -- CSO's SwingN and HitN files sorted by ear. Each entry is a number N, or a { first, last } range of them. A file can
--- be in more than one category.
+-- be in more than one category, and one in none never plays: Swing6 (a near copy of Swing5), Hit68, Hit97, Hit98.
+-- tools/sound_sorting.py lays these out as folders of copies to sort by ear, and writes them back here.
 local SWING_CATEGORIES = {
     plain = { { 21, 23 } },                 -- generic, no metal: hand-to-hand, staves, spears' swings
-    sharpMetal = { { 1, 6 } },              -- short blades, daggers
+    sharpMetal = { { 1, 5 } },              -- short blades, daggers
     bladeMetal = { { 11, 16 } },            -- metallic blade whooshes: swords, staves, spears' thrusts
     ringingBladeMetal = { { 24, 26 } },     -- like bladeMetal, sharper and with a ring: long blades, daggers, spears' thrusts
     heavyMetal = { { 7, 10 }, { 17, 20 } }, -- maces, warhammers, axes
@@ -256,30 +253,38 @@ local function inEntries(n, entries)
     return false
 end
 
--- folder ('swing' or 'hit') -> { all = every file, [category] = its files }. Listed on first use rather than at
--- load: most actors never swing or get hit.
+-- folder ('swing' or 'hit') -> { all = every file in some category, [category] = its files }. Listed on first use
+-- rather than at load: most actors never swing or get hit.
 local files = nil
 local function getFiles()
     if files then return files end
     files = {}
     local categoriesOf = { swing = SWING_CATEGORIES, hit = HIT_CATEGORIES }
     for folder, dir in pairs(SOUND_DIRS) do
-        local all = {}
+        local found = {}
         for path in vfs.pathsWithPrefix(dir) do
-            if SOUND_EXTENSIONS[path:match('%.(%w+)$')] and not DUPLICATES[path] then all[#all + 1] = path end
+            if SOUND_EXTENSIONS[path:match('%.(%w+)$')] then found[#found + 1] = path end
         end
-        table.sort(all)
-        if #all == 0 and isPlayer then
+        table.sort(found)
+        if #found == 0 and isPlayer then
             print('[Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
         end
+        local all, inAll = {}, {}
         local byCategory = { all = all }
         for category, entries in pairs(categoriesOf[folder]) do
             local list = {}
-            for _, path in ipairs(all) do
-                if inEntries(tonumber(path:match('(%d+)%.%w+$')), entries) then list[#list + 1] = path end
+            for _, path in ipairs(found) do
+                if inEntries(tonumber(path:match('(%d+)%.%w+$')), entries) then
+                    list[#list + 1] = path
+                    if not inAll[path] then
+                        inAll[path] = true
+                        all[#all + 1] = path
+                    end
+                end
             end
             byCategory[category] = list
         end
+        table.sort(all)
         files[folder] = byCategory
     end
     return files
