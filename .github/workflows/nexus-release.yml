@@ -56,8 +56,8 @@ env:
   NEXUS_PAGE: https://www.nexusmods.com/morrowind/mods/CHANGEME
   NEXUSMODS_FILE_ID: "CHANGEME"
   NEXUSMODS_MOD_ID: "CHANGEME"
-  FILE_DISPLAY_NAME: Combat Juice - Combat Sounds Overhaul
-  ZIP_NAME: CombatJuiceCombatSoundsOverhaul
+  FILE_DISPLAY_NAME: Combat Sounds Overhaul Overhauled
+  ZIP_NAME: CombatSoundsOverhaulOverhauled
   VERSION_SOURCE: Scripts/CSO/SoundManager.lua
 
 jobs:

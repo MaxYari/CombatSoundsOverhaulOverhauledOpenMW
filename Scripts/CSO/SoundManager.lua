@@ -1,4 +1,4 @@
--- Combat Juice - Combat Sounds Overhaul. This file takes the place of CSO's own Scripts/CSO/SoundManager.lua, so
+-- Combat Sounds Overhaul Overhauled. This file takes the place of CSO's own Scripts/CSO/SoundManager.lua, so
 -- CSO's plugin attaches it and nothing new needs enabling. The sounds are played from where CSO installed them.
 --
 -- CSO swaps the vanilla weapon swishes and armor hit sounds for its own. The original asked every frame, on every
@@ -24,7 +24,7 @@
 -- categories keeps its vanilla sound: a creature's own attack swings with the vanilla swish, as it did in the original.
 --
 -- Every CSO sound, caught or asked for through the interface, goes through play(), where handlers other scripts add
--- with I.CJCombatSoundsOverhaul.addOnPlayHandler can change it or stop it.
+-- with I.CombatSoundsOO.addOnPlayHandler can change it or stop it.
 local core = require('openmw.core')
 local self = require('openmw.self')
 local types = require('openmw.types')
@@ -248,9 +248,9 @@ local BODY_BY_BLOOD = { [1] = 'bone', [2] = 'metal' }
 -- name, model or record id is a ghost instead; that also catches ghosts a mod moved to a blood type of their own.
 local GHOST_WORDS = { 'ghost', 'spectre', 'specter', 'spirit', 'haunt', 'wraith', 'phantom', 'apparition' }
 -- Sounds for a kind of creature, on top of every hit it takes whatever hit it: one folder per class here, e.g.
--- Sound/Fx/Item/CJCreature/Ghost/. An actor's classes are its body's, then for a creature its record's type; the
+-- Sound/Fx/Item/CSOOCreature/Ghost/. An actor's classes are its body's, then for a creature its record's type; the
 -- first one whose folder has sounds in it plays.
-local CREATURE_DIR = 'sound/fx/item/cjcreature/'
+local CREATURE_DIR = 'sound/fx/item/csoocreature/'
 local CLASS_OF_BODY = { ghost = 'Ghost', bone = 'Skeleton', metal = 'Metal' }
 local CLASS_OF_TYPE = {
     [types.Creature.TYPE.Creatures] = 'Creatures',
@@ -359,7 +359,7 @@ local function getFiles()
         end
         table.sort(found)
         if #found == 0 and isPlayer then
-            print('[CJ: Combat Sounds Overhaul] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
+            print('[Combat Sounds Overhaul Overhauled] No sounds in ' .. dir .. ' - is Combat Sounds Overhaul installed?')
         end
         local all, inAll = {}, {}
         local byCategory = { all = all }
@@ -621,7 +621,7 @@ local function swingGroupsOf(weaponId)
                     known[#known + 1] = group
                 elseif not unknownGroups[group] then
                     unknownGroups[group] = true
-                    print('[CJ: Combat Sounds Overhaul] A swing groups handler gave ' .. tostring(group)
+                    print('[Combat Sounds Overhaul Overhauled] A swing groups handler gave ' .. tostring(group)
                         .. ', which is not one of SWING_GROUPS; it is left out')
                 end
             end
@@ -670,19 +670,19 @@ local playHandlers = {}
 -- The overall volumes from the settings page. Settings live in the player's storage, which only the player's script
 -- can read, so the player's copy of this script hands them to everyone else's: to an actor that asks as it becomes
 -- active, and to all nearby ones when they change.
-local SETTINGS_PAGE, SETTINGS_GROUP = 'CJCombatSoundsOverhaul', 'SettingsCJCombatSoundsOverhaul'
+local SETTINGS_PAGE, SETTINGS_GROUP = 'CombatSoundsOO', 'SettingsCombatSoundsOO'
 local volumes = { hit = 1, swing = 1 }
 if isPlayer then
     I.Settings.registerPage {
         key = SETTINGS_PAGE,
-        l10n = 'CJCombatSoundsOverhaul',
-        name = 'CJ: Combat Sounds Overhaul',
+        l10n = 'CombatSoundsOO',
+        name = 'Combat Sounds Overhaul Overhauled',
         description = "Combat Sounds Overhaul's swings and hits, picked for the weapon and what it hits.",
     }
     I.Settings.registerGroup {
         key = SETTINGS_GROUP,
         page = SETTINGS_PAGE,
-        l10n = 'CJCombatSoundsOverhaul',
+        l10n = 'CombatSoundsOO',
         name = 'Volume',
         permanentStorage = true,
         settings = {
@@ -713,7 +713,7 @@ if isPlayer then
     section:subscribe(async:callback(function()
         readVolumes()
         for _, actor in ipairs(nearby.actors) do
-            if actor ~= self.object then actor:sendEvent('CJCombatSoundsOverhaul_Volumes', volumes) end
+            if actor ~= self.object then actor:sendEvent('CombatSoundsOO_Volumes', volumes) end
         end
     end))
 end
@@ -739,7 +739,7 @@ local function play(file, kind, surface, attack, tag, via, volume, pitch, role)
     }
     local stopped = auxUtil.callEventHandlers(playHandlers, info)
     if debugLog then
-        print(string.format('[CJ: Combat Sounds Overhaul] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
+        print(string.format('[Combat Sounds Overhaul Overhauled] %s: %s -> %s (%s, pitch %.2f)%s', self.recordId, tag or kind,
             tostring(info.file), describe(via, attack.weapon, surface, attack.attackType) .. ', ' .. tostring(info.category)
                 .. (role and (', ' .. role) or ''), info.pitch,
             stopped and ' - stopped by a handler' or ''))
@@ -817,7 +817,7 @@ end
 
 local function checkVolume(volume, caller)
     if volume ~= nil and (type(volume) ~= 'number' or volume < 0) then
-        error('CJCombatSoundsOverhaul.' .. caller .. ': volume must be a number of 0 or more', 3)
+        error('CombatSoundsOO.' .. caller .. ': volume must be a number of 0 or more', 3)
     end
     return volume
 end
@@ -825,7 +825,7 @@ end
 local function checkWeapon(weapon, caller)
     local kind = WEAPON_BY_NAME[weapon]
     if not kind then
-        error('CJCombatSoundsOverhaul.' .. caller .. ': weapon must be one of CJCombatSoundsOverhaul.WEAPON, not '
+        error('CombatSoundsOO.' .. caller .. ': weapon must be one of CombatSoundsOO.WEAPON, not '
             .. tostring(weapon), 3)
     end
     return kind
@@ -835,7 +835,7 @@ end
 local function checkAttackType(attackType, caller)
     if attackType ~= nil and attackType ~= ATTACK_TYPES.Chop and attackType ~= ATTACK_TYPES.Slash
         and attackType ~= ATTACK_TYPES.Thrust then
-        error('CJCombatSoundsOverhaul.' .. caller .. ': attackType must be one of I.Combat.ATTACK_TYPES, not '
+        error('CombatSoundsOO.' .. caller .. ': attackType must be one of I.Combat.ATTACK_TYPES, not '
             .. tostring(attackType), 3)
     end
     return attackType
@@ -852,7 +852,7 @@ end
 local function playHit(armor, volume, weapon, attackType)
     local surface = ARMOR_BY_NAME[armor]
     if not surface then
-        error('CJCombatSoundsOverhaul.playHit: armor must be one of CJCombatSoundsOverhaul.ARMOR, not ' .. tostring(armor), 2)
+        error('CombatSoundsOO.playHit: armor must be one of CombatSoundsOO.ARMOR, not ' .. tostring(armor), 2)
     end
     volume = checkVolume(volume, 'playHit')
     local kind = weapon ~= nil and checkWeapon(weapon, 'playHit') or nil
@@ -919,27 +919,27 @@ local function onUpdate()
 end
 
 local function setWeaponKind(recordId, weapon)
-    if type(recordId) ~= 'string' then error('CJCombatSoundsOverhaul.setWeaponKind: recordId must be a string', 2) end
+    if type(recordId) ~= 'string' then error('CombatSoundsOO.setWeaponKind: recordId must be a string', 2) end
     kindOverrides[recordId:lower()] = weapon ~= nil and checkWeapon(weapon, 'setWeaponKind') or nil
 end
 
 local function emit(tag, options)
-    if type(tag) ~= 'string' then error('CJCombatSoundsOverhaul.emit: tag must be a string', 2) end
+    if type(tag) ~= 'string' then error('CombatSoundsOO.emit: tag must be a string', 2) end
     if options then checkAttackType(options.attackType, 'emit') end
     return swap(tag, options, 'emit')
 end
 
 return {
-    interfaceName = 'CJCombatSoundsOverhaul',
+    interfaceName = 'CombatSoundsOO',
     ---
     -- Lets other scripts, and the Lua console (luap / luas), make CSO do what it does when it catches a vanilla sound.
-    -- @usage I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')
-    -- @usage I.CJCombatSoundsOverhaul.emit('Weapon Swish', { weapon = someDagger, pitch = 1.2 })
-    -- @usage local cso = I.CJCombatSoundsOverhaul
+    -- @usage I.CombatSoundsOO.emit('Heavy Armor Hit')
+    -- @usage I.CombatSoundsOO.emit('Weapon Swish', { weapon = someDagger, pitch = 1.2 })
+    -- @usage local cso = I.CombatSoundsOO
     -- cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)
     -- cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt)
     -- cso.playHit(cso.ARMOR.Unarmored, 1, cso.WEAPON.Spear, I.Combat.ATTACK_TYPES.Thrust)
-    -- @usage actor:sendEvent('CJCombatSoundsOverhaul_Emit', { tag = 'SwishL' })
+    -- @usage actor:sendEvent('CombatSoundsOO_Emit', { tag = 'SwishL' })
     interface = {
         version = 1,
         modVersion = VERSION,
@@ -959,7 +959,7 @@ return {
         -- blood), Metal, Bone or Ghost. Read from its blood type, and for ghosts its name and model.
         getBody = function() return NAME_OF_SURFACE[bodyType()] end,
 
-        --- This actor's classes for the creature sound folders (Sound/Fx/Item/CJCreature/<class>/), most particular
+        --- This actor's classes for the creature sound folders (Sound/Fx/Item/CSOOCreature/<class>/), most particular
         -- first: Ghost, Skeleton or Metal from its body, then for a creature Creatures, Daedra, Undead or Humanoid from
         -- its record. The first whose folder has sounds plays on top of every hit it takes.
         -- @return #list<#string>
@@ -1004,7 +1004,7 @@ return {
         -- Add it from a script attached after this one, as a handler added to I.Combat would be.
         -- @param #function handler function(info)
         addOnPlayHandler = function(handler)
-            if type(handler) ~= 'function' then error('CJCombatSoundsOverhaul.addOnPlayHandler: handler must be a function', 2) end
+            if type(handler) ~= 'function' then error('CombatSoundsOO.addOnPlayHandler: handler must be a function', 2) end
             playHandlers[#playHandlers + 1] = handler
         end,
 
@@ -1044,7 +1044,7 @@ return {
         -- @param #function handler function(recordId)
         addSwingGroupsHandler = function(handler)
             if type(handler) ~= 'function' then
-                error('CJCombatSoundsOverhaul.addSwingGroupsHandler: handler must be a function', 2)
+                error('CombatSoundsOO.addSwingGroupsHandler: handler must be a function', 2)
             end
             swingGroupsHandlers[#swingGroupsHandlers + 1] = handler
         end,
@@ -1074,26 +1074,26 @@ return {
         onActive = function()
             if isPlayer then return end
             for _, player in ipairs(nearby.players) do
-                player:sendEvent('CJCombatSoundsOverhaul_WhatVolumes', self.object)
+                player:sendEvent('CombatSoundsOO_WhatVolumes', self.object)
             end
         end,
     },
     -- For scripts that can't reach this actor's interface, such as global scripts
     eventHandlers = {
         -- { tag = ..., weapon = ..., attacker = ..., force = ..., volume = ..., pitch = ... }, as for emit
-        CJCombatSoundsOverhaul_Emit = function(data) swap(tostring(data.tag), data, 'event') end,
+        CombatSoundsOO_Emit = function(data) swap(tostring(data.tag), data, 'event') end,
         -- { weapon = one of WEAPON, volume = ..., attackType = one of I.Combat.ATTACK_TYPES }
-        CJCombatSoundsOverhaul_PlaySwing = function(data) playSwing(data.weapon, data.volume, data.attackType) end,
+        CombatSoundsOO_PlaySwing = function(data) playSwing(data.weapon, data.volume, data.attackType) end,
         -- { armor = one of ARMOR, volume = ..., weapon = one of WEAPON, attackType = one of I.Combat.ATTACK_TYPES }
-        CJCombatSoundsOverhaul_PlayHit = function(data) playHit(data.armor, data.volume, data.weapon, data.attackType) end,
+        CombatSoundsOO_PlayHit = function(data) playHit(data.armor, data.volume, data.weapon, data.attackType) end,
         -- { recordId = ..., weapon = one of WEAPON or nil }, as for setWeaponKind
-        CJCombatSoundsOverhaul_SetWeaponKind = function(data) setWeaponKind(data.recordId, data.weapon) end,
+        CombatSoundsOO_SetWeaponKind = function(data) setWeaponKind(data.recordId, data.weapon) end,
 
         -- The volumes from the settings page, between the player's copy of this script and everyone else's
-        CJCombatSoundsOverhaul_WhatVolumes = function(actor)
-            if isPlayer then actor:sendEvent('CJCombatSoundsOverhaul_Volumes', volumes) end
+        CombatSoundsOO_WhatVolumes = function(actor)
+            if isPlayer then actor:sendEvent('CombatSoundsOO_Volumes', volumes) end
         end,
-        CJCombatSoundsOverhaul_Volumes = function(data)
+        CombatSoundsOO_Volumes = function(data)
             if isPlayer then return end
             volumes.hit = tonumber(data.hit) or 1
             volumes.swing = tonumber(data.swing) or 1

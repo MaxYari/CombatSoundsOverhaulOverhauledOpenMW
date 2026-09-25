@@ -1,4 +1,4 @@
-[size=6][b]Combat Juice - Combat Sounds Overhaul[/b][/size]
+[size=6][b]Combat Sounds Overhaul Overhauled[/b][/size]
 
 A replacement script for [url=https://www.nexusmods.com/morrowind/mods/53859]Combat Sounds Overhaul[/url] (CSO) by Jyggalagpuff. Swings and armor hits still play CSO's sounds, but:
 
@@ -20,7 +20,7 @@ New to OpenMW mods? [url=https://modding-openmw.com/tips/installing-mods/]Read t
 
 [size=5][b]Settings[/b][/size]
 
-[b]Options → Scripts → CJ: Combat Sounds Overhaul[/b] has [b]Hit Volume[/b] and [b]Swing Volume[/b], each from 0 to 1.
+[b]Options → Scripts → Combat Sounds Overhaul Overhauled[/b] has [b]Hit Volume[/b] and [b]Swing Volume[/b], each from 0 to 1.
 
 [size=5][b]What it does[/b][/size]
 
@@ -57,7 +57,7 @@ Blades, axes, maces and warhammers also ring on top of a quarter of their hits, 
 
 [size=5][b]Creature sounds[/b][/size]
 
-Sounds in [font=Courier New]Sound/Fx/Item/CJCreature/<Class>/[/font], from this or any later mod, play on top of every hit a creature of that class takes. The classes are:
+Sounds in [font=Courier New]Sound/Fx/Item/CSOOCreature/<Class>/[/font], from this or any later mod, play on top of every hit a creature of that class takes. The classes are:
 
 [list]
 [*][font=Courier New]Ghost[/font], [font=Courier New]Skeleton[/font] or [font=Courier New]Metal[/font], from the creature's body.
@@ -68,9 +68,9 @@ When a creature has two classes, the one from its body is used if its folder has
 
 [size=5][b]For developers[/b][/size]
 
-Every actor has [font=Courier New]I.CJCombatSoundsOverhaul[/font]. It's per actor, so call it from a script attached after this one, on every actor it should affect.
+Every actor has [font=Courier New]I.CombatSoundsOO[/font]. It's per actor, so call it from a script attached after this one, on every actor it should affect.
 
-[code]local cso = I.CJCombatSoundsOverhaul
+[code]local cso = I.CombatSoundsOO
 
 cso.emit('Heavy Armor Hit', { weapon = someMace })  -- swap a vanilla sound, as CSO does when it catches one
 cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)         -- weapon, volume
@@ -92,10 +92,10 @@ end)[/code]
 [*][font=Courier New]addSwingGroupsHandler(handler)[/font] lets a weapon keep its kind but swing with other groups. The handler gets the weapon's record id and returns a list of [font=Courier New]SWING_GROUPS[/font], or [font=Courier New]nil[/font] to leave the weapon to its kind. An empty list keeps the vanilla swish.
 [*][font=Courier New]addOnPlayHandler(handler)[/font] is called with [font=Courier New]info[/font] before every sound. [font=Courier New]file[/font], [font=Courier New]volume[/font] and [font=Courier New]pitch[/font] can be changed. The volume settings apply on top. It also has [font=Courier New]kind[/font] ('swing' or 'hit'), [font=Courier New]tag[/font], [font=Courier New]weapon[/font], [font=Courier New]weaponId[/font], [font=Courier New]armor[/font], [font=Courier New]attackType[/font], [font=Courier New]category[/font], [font=Courier New]layered[/font], [font=Courier New]underneath[/font] and [font=Courier New]via[/font]. Return [font=Courier New]false[/font] to stop the sound. The vanilla one stays stopped.
 [*][font=Courier New]getBody()[/font] and [font=Courier New]getCreatureClasses()[/font] say what the actor counts as. [font=Courier New]setDebug(true)[/font] logs every sound it plays.
-[*]Global scripts can send the actor these events: [font=Courier New]CJCombatSoundsOverhaul_Emit[/font] ([font=Courier New]tag[/font] plus [font=Courier New]emit[/font]'s options), [font=Courier New]_PlaySwing[/font], [font=Courier New]_PlayHit[/font] and [font=Courier New]_SetWeaponKind[/font], with the same arguments as fields.
+[*]Global scripts can send the actor these events: [font=Courier New]CombatSoundsOO_Emit[/font] ([font=Courier New]tag[/font] plus [font=Courier New]emit[/font]'s options), [font=Courier New]_PlaySwing[/font], [font=Courier New]_PlayHit[/font] and [font=Courier New]_SetWeaponKind[/font], with the same arguments as fields.
 [/list]
 
-To try it, click an NPC in the console, type [font=Courier New]luas[/font], then run [font=Courier New]I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')[/font].
+To try it, click an NPC in the console, type [font=Courier New]luas[/font], then run [font=Courier New]I.CombatSoundsOO.emit('Heavy Armor Hit')[/font].
 
 [size=5][b]Credits[/b][/size]
 

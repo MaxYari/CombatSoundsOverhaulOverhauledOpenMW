@@ -1,4 +1,4 @@
-# Combat Juice - Combat Sounds Overhaul
+# Combat Sounds Overhaul Overhauled
 
 A replacement script for [Combat Sounds Overhaul](https://www.nexusmods.com/morrowind/mods/53859) (CSO) by Jyggalagpuff. Swings and armor hits still play CSO's sounds, but:
 
@@ -16,7 +16,7 @@ New to OpenMW mods? [Read this first](https://modding-openmw.com/tips/installing
 
 ## Settings
 
-**Options → Scripts → CJ: Combat Sounds Overhaul** has **Hit Volume** and **Swing Volume**, each from 0 to 1.
+**Options → Scripts → Combat Sounds Overhaul Overhauled** has **Hit Volume** and **Swing Volume**, each from 0 to 1.
 
 ## What it does
 
@@ -47,7 +47,7 @@ Blades, axes, maces and warhammers also ring on top of a quarter of their hits, 
 
 ## Creature sounds
 
-Sounds in `Sound/Fx/Item/CJCreature/<Class>/`, from this or any later mod, play on top of every hit a creature of that class takes. The classes are:
+Sounds in `Sound/Fx/Item/CSOOCreature/<Class>/`, from this or any later mod, play on top of every hit a creature of that class takes. The classes are:
 
 - `Ghost`, `Skeleton` or `Metal`, from the creature's body.
 - `Creatures`, `Daedra`, `Undead` or `Humanoid`, from its record.
@@ -56,10 +56,10 @@ When a creature has two classes, the one from its body is used if its folder has
 
 ## For developers
 
-Every actor has `I.CJCombatSoundsOverhaul`. It's per actor, so call it from a script attached after this one, on every actor it should affect.
+Every actor has `I.CombatSoundsOO`. It's per actor, so call it from a script attached after this one, on every actor it should affect.
 
 ```lua
-local cso = I.CJCombatSoundsOverhaul
+local cso = I.CombatSoundsOO
 
 cso.emit('Heavy Armor Hit', { weapon = someMace })  -- swap a vanilla sound, as CSO does when it catches one
 cso.playSwing(cso.WEAPON.AxeTwoHanded, 0.8)         -- weapon, volume
@@ -81,9 +81,9 @@ end)
 - `addSwingGroupsHandler(handler)` lets a weapon keep its kind but swing with other groups. The handler gets the weapon's record id and returns a list of `SWING_GROUPS`, or `nil` to leave the weapon to its kind. An empty list keeps the vanilla swish.
 - `addOnPlayHandler(handler)` is called with `info` before every sound. `file`, `volume` and `pitch` can be changed. The volume settings apply on top. It also has `kind` ('swing' or 'hit'), `tag`, `weapon`, `weaponId`, `armor`, `attackType`, `category`, `layered`, `underneath` and `via`. Return `false` to stop the sound. The vanilla one stays stopped.
 - `getBody()` and `getCreatureClasses()` say what the actor counts as. `setDebug(true)` logs every sound it plays.
-- Global scripts can send the actor these events: `CJCombatSoundsOverhaul_Emit` (`tag` plus `emit`'s options), `_PlaySwing`, `_PlayHit` and `_SetWeaponKind`, with the same arguments as fields.
+- Global scripts can send the actor these events: `CombatSoundsOO_Emit` (`tag` plus `emit`'s options), `_PlaySwing`, `_PlayHit` and `_SetWeaponKind`, with the same arguments as fields.
 
-To try it, click an NPC in the console, type `luas`, then run `I.CJCombatSoundsOverhaul.emit('Heavy Armor Hit')`.
+To try it, click an NPC in the console, type `luas`, then run `I.CombatSoundsOO.emit('Heavy Armor Hit')`.
 
 <!-- nexus-skip-section -->
 ## Working on the mod
