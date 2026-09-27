@@ -150,25 +150,19 @@ local HEAVY_ARMOR_HIT_SOUNDS = {
     crossbow = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
     default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' }, -- spears' swings, claws, thrown
 }
--- Skeletons, liches, bonelords: the bone hits, or for a thrust the pure stab. Blunt weapons and staves hit blunt
--- whatever the attack.
+-- Skeletons, liches, bonelords, and ghosts, spectres, spirits: bone is their flesh. A bone hit, or a pure stab for a
+-- thrust, and for blunt weapons and staves a pure blunt hit or a blunt bone hit, whatever the attack.
 local BONE_HIT_SOUNDS = {
-    blunt = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
-    bluntThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
-    staff = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
-    staffThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
-    thrust = { 'stabPure', 'BoneHit' },
-    default = { 'BoneHit', 'BluntBoneHit' }, -- blades' cuts, axes, spears' swings, thrown, arrows, fists, claws
-}
--- Ghosts, spectres, spirits: the bone hits as for skeletons, the pure stab for a thrust, the pure blunt hit for blunt
--- weapons and staves
-local GHOST_HIT_SOUNDS = {
-    blunt = { 'BluntHitPure' },
-    bluntThrust = { 'BluntHitPure' },
-    staff = { 'BluntHitPure' },
-    staffThrust = { 'BluntHitPure' },
+    blunt = { 'BluntHitPure', 'BluntBoneHit' },
+    bluntThrust = { 'BluntHitPure', 'BluntBoneHit' },
+    staff = { 'BluntHitPure', 'BluntBoneHit' },
+    staffThrust = { 'BluntHitPure', 'BluntBoneHit' },
     thrust = { 'stabPure' },
-    default = { 'BoneHit', 'BluntBoneHit' },
+    default = { 'BoneHit' }, -- blades' cuts, axes, spears' swings, thrown, arrows, fists, claws
+}
+-- What a skeleton or ghost sounds like under a pure hit, as the living sound like their flesh
+local BONE_UNDER_SOUNDS = {
+    default = { 'BoneHit' },
 }
 -- A creature of metal, which doesn't bleed
 local METAL_BODY_HIT_SOUNDS = {
@@ -198,7 +192,7 @@ local HIT_SOUNDS = {
     flesh = { FLESH_HIT_SOUNDS, RING_SOUNDS },
     metal = { METAL_BODY_HIT_SOUNDS, RING_SOUNDS },
     bone = { BONE_HIT_SOUNDS, RING_SOUNDS },
-    ghost = { GHOST_HIT_SOUNDS, RING_SOUNDS },
+    ghost = { BONE_HIT_SOUNDS, RING_SOUNDS },
 }
 -- Hit categories that don't join the draw: where a *_SOUNDS table lists one, it plays on top of the hit, this often
 -- per hit
@@ -206,11 +200,13 @@ local HIT_LAYER_CHANCES = {
     RingingBladePure = 0.25,
     BluntRingPure = 0.25,
 }
--- Armor with flesh under it: on a living actor a pure hit on it (a category with Pure in its name) always plays the
--- weapon's flesh sound, at this much of the armor hit's volume, and the pure hit itself only this often
-local FLESH_UNDER = { medium = true, heavy = true }
-local FLESH_UNDER_VOLUME = 1
-local ARMOR_OVER_FLESH_CHANCE = 0.75
+-- A pure hit (a category with Pure in its name) has the body's own sound under it, at this much of its volume: the
+-- weapon's flesh sound for the living, a bone hit for skeletons and ghosts. On medium or heavy armor the body's sound
+-- always plays and the armor hit only this often; on a skeleton's or ghost's bare bones the pure hit always plays.
+local UNDER_BY_BODY = { flesh = FLESH_HIT_SOUNDS, bone = BONE_UNDER_SOUNDS, ghost = BONE_UNDER_SOUNDS }
+local ARMOR_OVER_BODY = { medium = true, heavy = true }
+local UNDER_VOLUME = 1
+local ARMOR_OVER_BODY_CHANCE = 0.75
 local SWING_TABLES = { SWING_SOUNDS }
 -- false leaves unarmored hits with only the body hit, e.g. to tune it on its own: the CSO layer starts with it and
 -- drowns it out. emit('Health Damage') plays the layer either way.
@@ -756,26 +752,26 @@ local function isPure(category)
     return category ~= nil and category:lower():find('pure', 1, true) ~= nil
 end
 
--- Plays a hit drawn for what it lands on (`file`), with what goes with it: the layers that roll this time on top of
--- it, and when it's a pure hit on medium or heavy armor over a living body, the weapon's flesh sound under it. That
--- flesh sound always plays, quieter, and the pure hit and its layers only ARMOR_OVER_FLESH_CHANCE of the time.
--- Returns the first file played, or nil.
+-- Plays a hit drawn for what it lands on (`file`), with what goes with it: for a pure hit, the body's sound under it
+-- (UNDER_BY_BODY), then the layers that roll this time and the creature's own sound on top. Returns the first file
+-- played, or nil.
 local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
     local weapon, attackType = attack.weapon, attack.attackType
-    local fleshUnder = FLESH_UNDER[surface] and bodyType() == 'flesh' and isPure(categoryOf[file])
+    -- the body's sound under a pure hit: the wearer's under armor, and a bare body's own
+    local body = ARMOR_OVER_BODY[surface] and bodyType() or surface
+    local underSounds = isPure(categoryOf[file]) and UNDER_BY_BODY[body] or nil
     local played = nil
-    if not fleshUnder or math.random() < ARMOR_OVER_FLESH_CHANCE then
+    if not (underSounds and ARMOR_OVER_BODY[surface]) or math.random() < ARMOR_OVER_BODY_CHANCE then
         played = play(file, 'hit', surface, attack, tag, via, volume, pitch)
     end
-    if fleshUnder then
-        local flesh = pickFrom('hit', { FLESH_HIT_SOUNDS }, weapon, nil, attackType)
-        if flesh then
-            local under = play(flesh, 'hit', surface, attack, tag, via, (volume or 1) * FLESH_UNDER_VOLUME, nil,
-                'underneath')
+    if underSounds then
+        local body = pickFrom('hit', { underSounds }, weapon, nil, attackType)
+        if body then
+            local under = play(body, 'hit', surface, attack, tag, via, (volume or 1) * UNDER_VOLUME, nil, 'underneath')
             played = played or under
         end
     end
-    -- the layers go on top whether the armor hit played or only the flesh under it
+    -- the layers go on top whether the armor hit played or only the body under it
     for _, layer in ipairs(rollLayers('hit', HIT_SOUNDS[surface], weapon, attackType)) do
         play(layer, 'hit', surface, attack, tag, via, volume, nil, 'layer')
     end
@@ -998,7 +994,8 @@ return {
         --   attackType: one of I.Combat.ATTACK_TYPES for a swing or a melee hit made with a weapon (and when asked
         --   for), otherwise nil
         --   layered: true when it plays on top of another sound rather than in place of a vanilla one
-        --   underneath: true for the flesh sound played under an armor hit on a living actor
+        --   underneath: true for the body's sound played under a pure hit: flesh for the living, bone for skeletons
+        --   and ghosts
         --   category: the category the file is in, e.g. 'armorHeavyPureHit' or, for a layer, 'RingingBladePure'
         --   via: what set it off (release, early release, text key, hit, unarmored hit, emit, event, playSwing, playHit)
         -- Returning false stops the sound and skips the older handlers. A vanilla sound it answers stays stopped.

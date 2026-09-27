@@ -39,7 +39,7 @@ New to OpenMW mods? [Read this first](https://modding-openmw.com/tips/installing
 - **Flesh, light armor:** flesh impacts for the weapon, with slices for daggers, stabs for swords, thrusts and arrows, and punchy metallic ones for all but fists and arrows.
 - **Medium and heavy armor:** an armor impact with the wearer's flesh sound under it, or a punchy metallic impact.
 - **Dwemer machines:** heavy armor impacts.
-- **Skeletons, ghosts:** bone hits, with pure stabs for thrusts and pure blunt hits for maces, warhammers and staves.
+- **Skeletons, ghosts:** bone hits. Thrusts get a pure stab, and maces, warhammers and staves a pure blunt hit or a blunt bone hit. A pure hit always has a bone hit under it: bone is their flesh.
 
 Blades, axes, maces and warhammers also ring on top of a quarter of their hits, except thrusts.
 
