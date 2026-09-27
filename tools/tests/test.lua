@@ -522,7 +522,7 @@ local bone = bodyHit(1, W('BluntOneHand'))
 check(#stub.stopped == 0 and inSet(expected('hit', { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' }), stub.filesPlayed[1].file),
     'a skeleton (bone dust) gets a pure or bone hit over the body hit')
 pools('Health Damage', {
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'cutPure', 'BoneHit' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'BoneHit', 'BluntBoneHit' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'stabPure', 'BoneHit' } },
     { label = 'spear', weapon = 'SpearTwoWide', attackType = THRUST, categories = { 'stabPure', 'BoneHit' } },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
@@ -530,9 +530,9 @@ pools('Health Damage', {
     { label = 'warhammer', weapon = 'BluntTwoClose', attackType = THRUST, categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
     { label = 'staff', weapon = 'BluntTwoWide', categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
     { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' } },
-    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'cutPure', 'BoneHit' } },
-    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'cutPure', 'BoneHit' } },
-    { label = 'arrow', weapon = 'MarksmanBow', categories = { 'cutPure', 'BoneHit' } },
+    { label = 'fists', attacker = npc, attackType = THRUST, categories = { 'BoneHit', 'BluntBoneHit' } },
+    { label = 'claws', attacker = creature, attackType = THRUST, categories = { 'BoneHit', 'BluntBoneHit' } },
+    { label = 'arrow', weapon = 'MarksmanBow', categories = { 'BoneHit', 'BluntBoneHit' } },
 }, bone.interface)
 bodyHit(1, W('SpearTwoWide'), { type = THRUST, sourceType = 'melee' })
 check(inSet(expected('hit', { 'stabPure', 'BoneHit' }), lastFile()), 'a real spear thrust into a skeleton stabs')
@@ -541,7 +541,7 @@ for _ = 1, 400 do
     bodyHit(1, W('SpearTwoWide'), { type = THRUST, sourceType = 'ranged' })
     rangedBone[lastFile()] = true
 end
-check(sameSet(rangedBone, expected('hit', { 'cutPure', 'BoneHit' })), 'but only a melee attack counts as a thrust')
+check(sameSet(rangedBone, expected('hit', { 'BoneHit', 'BluntBoneHit' })), 'but only a melee attack counts as a thrust')
 bodyHit(0, W('BluntOneHand'))
 check(inSet(expected('hit', { 'metallicPunchyFleshHit' }), stub.filesPlayed[1].file), 'blood is flesh')
 -- An armored actor that doesn't bleed has no flesh under its armor, so the armor hit always plays
@@ -587,14 +587,14 @@ for _, b in ipairs(bodies) do
 end
 stub.bloodType, stub.record = 1, { name = 'Ancestor Ghost', model = 'r\\ancestorghost.nif' }
 local ghost = bodyHit(1, W('LongBladeOneHand'))
-check(ghost.interface.getBody() == 'Ghost' and inSet(expected('hit', { 'cutPure' }), stub.filesPlayed[1].file),
-    'a ghost gets a pure cut over the body hit')
+check(ghost.interface.getBody() == 'Ghost' and inSet(expected('hit', { 'BoneHit', 'BluntBoneHit' }), stub.filesPlayed[1].file),
+    'a ghost gets the bone hits over the body hit')
 pools('Health Damage', {
-    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'cutPure' } },
+    { label = 'longsword', weapon = 'LongBladeOneHand', categories = { 'BoneHit', 'BluntBoneHit' } },
     { label = 'longsword', weapon = 'LongBladeOneHand', attackType = THRUST, categories = { 'stabPure' } },
     { label = 'mace', weapon = 'BluntOneHand', categories = { 'BluntHitPure' } },
     { label = 'staff', weapon = 'BluntTwoWide', attackType = THRUST, categories = { 'BluntHitPure' } },
-    { label = 'claws', attacker = creature, categories = { 'cutPure' } },
+    { label = 'claws', attacker = creature, categories = { 'BoneHit', 'BluntBoneHit' } },
 }, ghost.interface)
 stub.record = {}
 -- each load takes over the stubbed engine hooks, so go back to a fresh copy of the main one
@@ -744,9 +744,9 @@ local hitCases = {
     { ARMOR.Unarmored, WEAPON.LongBladeTwoHanded, THRUST, { 'FleshStab', 'FleshHit', 'metallicPunchyFleshHit' } },
     { ARMOR.Metal, WEAPON.LongBlade, nil, { 'armorHeavyBladePureHit' } },
     { ARMOR.Metal, nil, nil, { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' } },
-    { ARMOR.Bone, nil, nil, { 'cutPure', 'BoneHit' } },
+    { ARMOR.Bone, nil, nil, { 'BoneHit', 'BluntBoneHit' } },
     { ARMOR.Bone, WEAPON.Spear, THRUST, { 'stabPure', 'BoneHit' } },
-    { ARMOR.Ghost, nil, nil, { 'cutPure' } },
+    { ARMOR.Ghost, nil, nil, { 'BoneHit', 'BluntBoneHit' } },
     { ARMOR.Ghost, WEAPON.Spear, THRUST, { 'stabPure' } },
 }
 for _, c in ipairs(hitCases) do

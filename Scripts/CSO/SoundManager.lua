@@ -150,24 +150,25 @@ local HEAVY_ARMOR_HIT_SOUNDS = {
     crossbow = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit' },
     default = { 'armorHeavyBladePureHit', 'armorHeavyBluntPureHit', 'metallicPunchyFleshHit' }, -- spears' swings, claws, thrown
 }
--- Skeletons, liches, bonelords: the pure cut, stab or blunt hit of anything with no flesh or armor, with the bone
--- hits. Blunt weapons and staves hit blunt whatever the attack.
+-- Skeletons, liches, bonelords: the bone hits, or for a thrust the pure stab. Blunt weapons and staves hit blunt
+-- whatever the attack.
 local BONE_HIT_SOUNDS = {
     blunt = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
     bluntThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
     staff = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
     staffThrust = { 'BluntHitPure', 'BluntBoneHit', 'BoneHit' },
     thrust = { 'stabPure', 'BoneHit' },
-    default = { 'cutPure', 'BoneHit' },
+    default = { 'BoneHit', 'BluntBoneHit' }, -- blades' cuts, axes, spears' swings, thrown, arrows, fists, claws
 }
--- Ghosts, spectres, spirits: no flesh or armor, so only the pure cut, stab or blunt hit
+-- Ghosts, spectres, spirits: the bone hits as for skeletons, the pure stab for a thrust, the pure blunt hit for blunt
+-- weapons and staves
 local GHOST_HIT_SOUNDS = {
     blunt = { 'BluntHitPure' },
     bluntThrust = { 'BluntHitPure' },
     staff = { 'BluntHitPure' },
     staffThrust = { 'BluntHitPure' },
     thrust = { 'stabPure' },
-    default = { 'cutPure' },
+    default = { 'BoneHit', 'BluntBoneHit' },
 }
 -- A creature of metal, which doesn't bleed
 local METAL_BODY_HIT_SOUNDS = {
