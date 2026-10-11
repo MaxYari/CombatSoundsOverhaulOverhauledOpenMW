@@ -39,7 +39,7 @@ local auxUtil = require('openmw_aux.util')
 local I = require('openmw.interfaces')
 
 -- the Nexus release workflow reads the first `version = ...` in this file
-local VERSION = "1.1"
+local VERSION = "1.4"
 
 local WINDUP_WATCH = 1.5 -- seconds of simulation time an attack's wind-up is watched for an early release
 local PITCH_MIN, PITCH_MAX = 0.9, 1.1 -- every CSO sound plays at a random pitch in between
