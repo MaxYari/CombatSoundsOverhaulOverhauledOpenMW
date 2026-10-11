@@ -1084,6 +1084,58 @@ check(inSet(PLAIN, lastFile()), 'a weapon whose kind has no swings gets them fro
 check(g.SWING_GROUPS.vanilla == 'vanilla' and g.SWING_GROUPS.sharpMetalRinging == 'sharpMetalRinging'
     and not pcall(function() return g.SWING_GROUPS.swrod end), 'SWING_GROUPS names the swing groups and nothing else')
 check(not pcall(g.addSwingGroupsHandler, 'nope'), 'a groups handler has to be a function')
+g.addSwingGroupsHandler(function(recordId)
+    if recordId == 'fist_katar' then return { g.SWING_GROUPS.sharpMetal }, true end
+    if recordId == 'fist_dagger' then return nil, true end
+end)
+stub.reset()
+stub.rightHand = stub.weapon('fist_katar', 'ShortBladeOneHand')
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+grouped.engineHandlers.onUpdate(0.016)
+check(#stub.stopped == 0 and stub.playing['weapon swish'] and #stub.filesPlayed == 1
+    and inSet(expected('swing', { 'sharpMetal' }), lastFile()) and stub.infos[1].layered,
+    "true after the list keeps the vanilla swish, with CSO's layered over it")
+stub.reset()
+stub.windUp('slash')
+stub.enginePlays('Weapon Swish')
+grouped.engineHandlers.onUpdate(0.016)
+grouped.engineHandlers.onUpdate(0.016)
+stub.release('slash')
+check(#stub.filesPlayed == 1 and #stub.stopped == 0, 'released early: layered once, though the kept swish plays on')
+stub.reset()
+stub.rightHand = stub.weapon('fist_dagger', 'ShortBladeOneHand')
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+check(#stub.stopped == 0 and stub.infos[1] and stub.infos[1].layered
+    and inSet(expected('swing', { 'sharpMetal', 'sharpMetalRinging', 'ringingBladeMetal', 'plain' }), lastFile()),
+    "and with no list, the weapon kind's whoosh goes over it")
+stub.rightHand = nil
+
+print('\n== a play handler that puts the vanilla swish back ==')
+local putsBack = loadScript(true)
+local swingPlays = 0
+putsBack.interface.addOnPlayHandler(function(info)
+    if info.kind ~= 'swing' then return end
+    swingPlays = swingPlays + 1
+    stub.enginePlays('Weapon Swish') -- its own swish in place of CSO's, as a fist's
+    return false
+end)
+stub.reset()
+stub.rightHand = SWORD
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+for _ = 1, 5 do putsBack.engineHandlers.onUpdate(0.016) end
+stub.release('chop')
+check(swingPlays == 1, 'released early, the swing is dealt with once, not again every frame or at the release ('
+    .. swingPlays .. ')')
+stub.reset()
+stub.windUp('chop')
+stub.enginePlays('Weapon Swish')
+stub.release('chop')
+check(swingPlays == 2, 'and the next swing is dealt with afresh')
 stub.rightHand = nil
 
 print('\n== volume settings ==')

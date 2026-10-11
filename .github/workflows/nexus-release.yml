@@ -52,10 +52,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # TODO: fill these in once the mod page exists (see the one-time setup above).
-  NEXUS_PAGE: https://www.nexusmods.com/morrowind/mods/CHANGEME
-  NEXUSMODS_FILE_ID: "CHANGEME"
-  NEXUSMODS_MOD_ID: "CHANGEME"
+  NEXUS_PAGE: https://www.nexusmods.com/morrowind/mods/60361
+  # From the "Advanced" panel of the main file on Nexus. Not secret.
+  NEXUSMODS_FILE_ID: "8026083"
+  NEXUSMODS_MOD_ID: "429496789961" # internal mod ID, not the one from the page URL
   FILE_DISPLAY_NAME: Combat Sounds Overhaul Overhauled
   ZIP_NAME: CombatSoundsOverhaulOverhauled
   VERSION_SOURCE: Scripts/CSO/SoundManager.lua

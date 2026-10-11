@@ -8,6 +8,8 @@
 --     attack animation. That playBlended call reaches the handler below synchronously, so the swish is swapped the
 --     moment it starts. An attack released before its wind-up reached "min attack" only plays the release half
 --     once it gets there, so for WINDUP_WATCH seconds after a wind-up starts the swish is also looked for in onUpdate.
+--     Whichever finds it deals with it, once a swing: a swish still playing - kept under CSO's, or one a play
+--     handler put back - is not taken for another.
 --   * SwishS / SwishM / SwishL come from "Sound: Swish*" text keys in creature attack animations. The engine plays
 --     the sound as the key passes and hands the key to Lua in the same frame.
 --   * Light / Medium / Heavy Armor Hit are played by the builtin Combat onHit handler, which runs after ours. A
@@ -37,7 +39,7 @@ local auxUtil = require('openmw_aux.util')
 local I = require('openmw.interfaces')
 
 -- the Nexus release workflow reads the first `version = ...` in this file
-local VERSION = "1.0"
+local VERSION = "1.1"
 
 local WINDUP_WATCH = 1.5 -- seconds of simulation time an attack's wind-up is watched for an early release
 local PITCH_MIN, PITCH_MAX = 0.9, 1.1 -- every CSO sound plays at a random pitch in between
@@ -327,6 +329,7 @@ local isPlayer = types.Player.objectIsInstance(self.object)
 local debugLog = false
 local windupUntil = nil  -- simulation time the current wind-up stops being watched
 local windupAttack = nil -- chop, slash or thrust: the attack being wound up
+local swingDealt = false -- the current swing's swish has been dealt with, by the watch or the release
 local pendingHit = nil  -- the last successful hit, whose sounds onUpdate looks for
 
 local function inEntries(n, entries)
@@ -603,29 +606,34 @@ local function rollLayers(folder, soundsTables, weapon, attackType)
     return rolled
 end
 
--- Handlers from addSwingGroupsHandler, newest first: a weapon's record id -> the swing groups it uses, or nil
+-- Handlers from addSwingGroupsHandler, newest first: a weapon's record id -> the swing groups it uses, or nil, and
+-- whether the engine's swish keeps playing under them
 local swingGroupsHandlers = {}
--- The swing groups a handler from addSwingGroupsHandler gives this weapon, or nil for the ones its kind uses
+-- The swing groups a handler from addSwingGroupsHandler gives this weapon, or nil for the ones its kind uses; and
+-- true when that handler keeps the engine's swish, CSO's then playing over it
 local unknownGroups = {}
 local function swingGroupsOf(weaponId)
-    if not weaponId then return nil end
+    if not weaponId then return nil, false end
     for i = #swingGroupsHandlers, 1, -1 do
-        local groups = swingGroupsHandlers[i](weaponId)
-        if groups ~= nil then
-            local known = {}
-            for _, group in ipairs(groups) do
-                if SWING_GROUP_BY_NAME[group] then
-                    known[#known + 1] = group
-                elseif not unknownGroups[group] then
-                    unknownGroups[group] = true
-                    print('[Combat Sounds Overhaul Overhauled] A swing groups handler gave ' .. tostring(group)
-                        .. ', which is not one of SWING_GROUPS; it is left out')
+        local groups, keepSwish = swingGroupsHandlers[i](weaponId)
+        if groups ~= nil or keepSwish then
+            local known = nil
+            if groups ~= nil then
+                known = {}
+                for _, group in ipairs(groups) do
+                    if SWING_GROUP_BY_NAME[group] then
+                        known[#known + 1] = group
+                    elseif not unknownGroups[group] then
+                        unknownGroups[group] = true
+                        print('[Combat Sounds Overhaul Overhauled] A swing groups handler gave ' .. tostring(group)
+                            .. ', which is not one of SWING_GROUPS; it is left out')
+                    end
                 end
             end
-            return known
+            return known, keepSwish == true
         end
     end
-    return nil
+    return nil, false
 end
 
 -- Whether an attack has CSO swings, from its weapon's own groups or its kind's. vanilla alone isn't one: the swap
@@ -784,7 +792,8 @@ local function playHitSounds(file, surface, attack, tag, via, volume, pitch)
 end
 
 -- The one swap every vanilla sound goes through: stop it on this actor and play a CSO one for it instead, or for
--- Health Damage, play one alongside it. The vanilla sound is stopped even if a handler stops the CSO one. weapon is
+-- Health Damage, and a swing whose groups handler keeps the swish, play one alongside it. The vanilla sound is stopped
+-- even if a handler stops the CSO one. weapon is
 -- what the attack is made with (weaponKind); a swing's is taken from this actor's right hand when not given.
 -- Returns the file played, or nil.
 local function swap(tag, options, via, attack)
@@ -805,9 +814,11 @@ local function swap(tag, options, via, attack)
     -- A vanilla swish drawn for a swing: the engine's own is playing already, at the pitch it gave the attack
     if folder == 'swing' and categoryOf[file] == 'vanilla' then return nil end
 
-    if folder ~= 'body' then sound.stopSound3d(tag, self) end
+    -- A weapon whose swing groups handler keeps the engine's swish swings with both, CSO's on top
+    local keepSwish = folder == 'swing' and select(2, swingGroupsOf(attack.weaponId))
+    if folder ~= 'body' and not keepSwish then sound.stopSound3d(tag, self) end
     if folder == 'swing' then
-        return play(file, 'swing', nil, attack, tag, via, options.volume, options.pitch)
+        return play(file, 'swing', nil, attack, tag, via, options.volume, options.pitch, keepSwish and 'over' or nil)
     end
     return playHitSounds(file, landsOn(tag), attack, tag, via, options.volume, options.pitch)
 end
@@ -864,16 +875,30 @@ local function swapIfPlaying(tag, via, attack)
     return nil
 end
 
+-- The current swing's swish, swapped once it plays and only once, whatever the swap does: CSO's in its place or over
+-- it, the vanilla one left be, or a play handler stopping CSO's. Returns whether the swing has been dealt with.
+local function swapSwish(via, attackType)
+    if swingDealt then return true end
+    if not sound.isSoundPlaying(WEAPON_SWISH, self) then return false end
+    swingDealt = true
+    swap(WEAPON_SWISH, nil, via, swinging(attackType))
+    return true
+end
+
 -- Wind-up plays "<attack> start" to "<attack> max attack"; the release plays from "<attack> max attack" on.
 I.AnimationController.addPlayBlendedAnimationHandler(function(_, options)
     if not options then return end
     local startKey, stopKey = options.startKey or '', options.stopKey or ''
     if endsWith(startKey, ' max attack') then
         windupUntil = nil
-        swapIfPlaying(WEAPON_SWISH, 'release', swinging(attackTypeOf(startKey)))
-    elseif endsWith(stopKey, ' max attack') and hasSwings(swinging()) then
-        windupUntil = core.getSimulationTime() + WINDUP_WATCH
-        windupAttack = attackTypeOf(stopKey)
+        swapSwish('release', attackTypeOf(startKey))
+        swingDealt = false
+    elseif endsWith(stopKey, ' max attack') then
+        swingDealt = false
+        if hasSwings(swinging()) then
+            windupUntil = core.getSimulationTime() + WINDUP_WATCH
+            windupAttack = attackTypeOf(stopKey)
+        end
     end
 end)
 
@@ -908,8 +933,7 @@ local function onUpdate()
         end
     end
     if windupUntil then
-        if swapIfPlaying(WEAPON_SWISH, 'early release', swinging(windupAttack))
-            or core.getSimulationTime() > windupUntil then
+        if swapSwish('early release', windupAttack) or core.getSimulationTime() > windupUntil then
             windupUntil = nil
         end
     end
@@ -998,7 +1022,8 @@ return {
         --   and ghosts
         --   category: the category the file is in, e.g. 'armorHeavyPureHit' or, for a layer, 'RingingBladePure'
         --   via: what set it off (release, early release, text key, hit, unarmored hit, emit, event, playSwing, playHit)
-        -- Returning false stops the sound and skips the older handlers. A vanilla sound it answers stays stopped.
+        -- Returning false stops the sound and skips the older handlers. A vanilla sound it answers stays stopped
+        -- (a swish its swing groups handler keeps was never stopped).
         -- Add it from a script attached after this one, as a handler added to I.Combat would be.
         -- @param #function handler function(info)
         addOnPlayHandler = function(handler)
@@ -1035,9 +1060,12 @@ return {
         --- Adds a handler that picks the swing groups a weapon uses, in place of the ones its kind would. It gets the
         -- weapon's record id on each swing with it, and returns a list of SWING_GROUPS, or nil to leave the weapon
         -- to the older handlers and then to its kind. An empty list leaves the vanilla swish alone, and so does
-        -- vanilla when it's drawn. Newest handler first. It is per actor, like the rest of the interface.
+        -- vanilla when it's drawn. A second return value of true keeps the vanilla swish playing as well, with CSO's
+        -- on top of it (from the list, or from the weapon's kind when the list is nil). Newest handler first. It is
+        -- per actor, like the rest of the interface.
         -- @usage cso.addSwingGroupsHandler(function(recordId)
         --     if recordId == 'my_katar' then return { cso.SWING_GROUPS.sharpMetal } end
+        --     if recordId == 'my_cestus' then return { cso.SWING_GROUPS.plain }, true end -- a fist's swish and a whoosh
         -- end)
         -- @param #function handler function(recordId)
         addSwingGroupsHandler = function(handler)

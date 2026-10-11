@@ -66,6 +66,7 @@ cso.playHit(cso.ARMOR.Heavy, 1, cso.WEAPON.Blunt)   -- armor, volume, weapon, at
 cso.setWeaponKind('my_katana', cso.WEAPON.LongBladeTwoHanded)  -- nil to undo
 cso.addSwingGroupsHandler(function(recordId)
     if recordId == 'my_katar' then return { cso.SWING_GROUPS.sharpMetal } end
+    if recordId == 'my_cestus' then return { cso.SWING_GROUPS.plain }, true end  -- a fist's swish and a whoosh
 end)
 cso.addOnPlayHandler(function(info)
     if info.weaponId == 'my_katar' then info.volume = info.volume * 0.75 end
@@ -76,8 +77,8 @@ end)
 - `emit(tag, options)`: `tag` is one of `TAGS`, the vanilla sound ids CSO answers. `options` can hold `weapon`, `attacker`, `attackType`, `volume`, `pitch`, and `force` to play even when no group fits. It returns the file played, or `nil`. `pickFile(tag, options)` returns the file without playing it.
 - `playSwing(weapon, volume, attackType)` and `playHit(armor, volume, weapon, attackType)` play a sound with no vanilla sound to replace. `WEAPON` and `ARMOR` are enums of names, and a misspelled name is an error.
 - `setWeaponKind(recordId, weapon)` makes a weapon sound like another kind of `WEAPON`.
-- `addSwingGroupsHandler(handler)` lets a weapon keep its kind but swing with other groups. The handler gets the weapon's record id and returns a list of `SWING_GROUPS`, or `nil` to leave the weapon to its kind. An empty list keeps the vanilla swish.
-- `addOnPlayHandler(handler)` is called with `info` before every sound. `file`, `volume` and `pitch` can be changed. The volume settings apply on top. It also has `kind` ('swing' or 'hit'), `tag`, `weapon`, `weaponId`, `armor`, `attackType`, `category`, `layered`, `underneath` and `via`. Return `false` to stop the sound. The vanilla one stays stopped.
+- `addSwingGroupsHandler(handler)` lets a weapon keep its kind but swing with other groups. The handler gets the weapon's record id and returns a list of `SWING_GROUPS`, or `nil` to leave the weapon to its kind. An empty list keeps the vanilla swish. Return `true` after the list to keep the vanilla swish as well, with CSO's whoosh on top (after `nil`, the kind's).
+- `addOnPlayHandler(handler)` is called with `info` before every sound. `file`, `volume` and `pitch` can be changed. The volume settings apply on top. It also has `kind` ('swing' or 'hit'), `tag`, `weapon`, `weaponId`, `armor`, `attackType`, `category`, `layered`, `underneath` and `via`. Return `false` to stop the sound. The vanilla one stays stopped, unless the swing groups handler kept it.
 - `getBody()` and `getCreatureClasses()` say what the actor counts as. `setDebug(true)` logs every sound it plays.
 - Global scripts can send the actor these events: `CombatSoundsOO_Emit` (`tag` plus `emit`'s options), `_PlaySwing`, `_PlayHit` and `_SetWeaponKind`, with the same arguments as fields.
 
@@ -102,7 +103,7 @@ python3 tools/sound_sorting.py import   # writes the folders back into the table
 
 A new group still needs adding to a `*_SOUNDS` table before it plays. `sorting/` is git-ignored.
 
-A push to `main` runs the tests. A commit message starting with `[nexus]` also uploads to Nexus, as the first `version = ...` in the script. Before the first release, fill in the Nexus ids in `.github/workflows/nexus-release.yml` and add the `NEXUSMODS_API_KEY` secret. Enable the README → BBCode hook with `git config core.hooksPath .githooks`.
+A push to `main` runs the tests. A commit message starting with `[nexus]` also uploads to Nexus, as the first `version = ...` in the script. The Nexus ids are in `.github/workflows/nexus-release.yml`, and the API key is the repository's `NEXUSMODS_API_KEY` secret. Enable the README → BBCode hook with `git config core.hooksPath .githooks`.
 
 ## Credits
 
